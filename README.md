@@ -9,7 +9,7 @@ using Bee.SQLite;
 
 static void Main(string[] args)
 {
-	var connectionString = "Server=127.0.0.1;Database=db_name;User Id=db_user;Password=db_password;Connection Timeout=15";
+	var connectionString = "data source=Company.db;version=3;page size=4096;cache size=10000;journal mode=Wal;pooling=True;legacy format=False;default timeout=15000";
     var select = SQLite.select(connectionString, "select id, name, lastname, age from users");
 	
 	var items = select.result;
@@ -27,7 +27,7 @@ using Bee.SQLite;
 
 static void Main(string[] args)
 {
-	var connectionString = "Server=127.0.0.1;Database=db_name;User Id=db_user;Password=db_password;Connection Timeout=15";
+	var connectionString = "data source=Company.db;version=3;page size=4096;cache size=10000;journal mode=Wal;pooling=True;legacy format=False;default timeout=15000";
 	var select = SQLite.select(connectionString, "select id, name, lastname, age from users where id = @user_id", new Dictionary<string, object>{{"@user_id", 1}});
 	
 	var items = select.result
@@ -45,7 +45,7 @@ using Bee.SQLite;
 
 static void Main(string[] args)
 {
-	var connectionString = "Server=127.0.0.1;Database=db_name;User Id=db_user;Password=db_password;Connection Timeout=15";
+	var connectionString = "data source=Company.db;version=3;page size=4096;cache size=10000;journal mode=Wal;pooling=True;legacy format=False;default timeout=15000";
 	var select = SQLite.select(connectionString, "select id, name, lastname, age from users");
 	
 	if(select.execute)
@@ -68,7 +68,7 @@ using Bee.SQLite;
 
 static void Main(string[] args)
 {
-	var connectionString = "Server=127.0.0.1;Database=db_name;User Id=db_user;Password=db_password;Connection Timeout=15";
+	var connectionString = "data source=Company.db;version=3;page size=4096;cache size=10000;journal mode=Wal;pooling=True;legacy format=False;default timeout=15000";
 	var query = SQLite.query(connectionString, "insert into users(name, lastname, age) values('Gholibjon', 'Madiyarov', 29)");
 	
 	if(query.execute)
@@ -88,7 +88,7 @@ using Bee.SQLite;
 
 static void Main(string[] args)
 {
-	var connectionString = "Server=127.0.0.1;Database=db_name;User Id=db_user;Password=db_password;Connection Timeout=15";
+	var connectionString = "data source=Company.db;version=3;page size=4096;cache size=10000;journal mode=Wal;pooling=True;legacy format=False;default timeout=15000";
 	var query = SQLite.query(connectionString, "insert into users(name, lastname, age) values(@name, @lastname, @age)", new Dictionary<string, object>{{"@name", "Gholibjon"}, {"@lastname", "Madiyarov"}, {"@age", 29}});
 	
 	if(query.execute)
@@ -108,7 +108,7 @@ using Bee.SQLite;
 
 static void Main(string[] args)
 {
-	var connectionString = "Server=127.0.0.1;Database=db_name;User Id=db_user;Password=db_password;Connection Timeout=15";
+	var connectionString = "data source=Company.db;version=3;page size=4096;cache size=10000;journal mode=Wal;pooling=True;legacy format=False;default timeout=15000";
 	
 	var queries = new List<string>(){
 		"insert into users(name, lastname, age) values('Gholibjon', 'Madiyarov', 29)",
@@ -135,7 +135,7 @@ using Bee.SQLite;
 
 static void Main(string[] args)
 {
-	var connectionString = "Server=127.0.0.1;Database=db_name;User Id=db_user;Password=db_password;Connection Timeout=15";
+	var connectionString = "data source=Company.db;version=3;page size=4096;cache size=10000;journal mode=Wal;pooling=True;legacy format=False;default timeout=15000";
 	
 	var queries = new List<string>(){
 		"insert into users(name, lastname, age) values(@name, @lastname, @age)",
@@ -168,7 +168,7 @@ using Bee.SQLite;
 
 static void Main(string[] args)
 {
-	var connectionString = "Server=127.0.0.1;Database=db_name;User Id=db_user;Password=db_password;Connection Timeout=15";
+	var connectionString = "data source=Company.db;version=3;page size=4096;cache size=10000;journal mode=Wal;pooling=True;legacy format=False;default timeout=15000";
 	
 	var queries = new List<string>(){
 		"insert into users(name, lastname, age) values(@name, @lastname, @age)",
