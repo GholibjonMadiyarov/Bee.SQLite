@@ -199,7 +199,7 @@ namespace Bee.SQLite
                                 while (index <= queryTexts.Count - 1)
                                 {
                                     command.CommandType = isProcedure == true ? CommandType.StoredProcedure : CommandType.Text;
-                                    command.CommandText = queryTexts[index] + (isProcedure == false ? "; SELECT SCOPE_IDENTITY();" : "");
+                                    command.CommandText = queryTexts[index] + (isProcedure == false ? "; SELECT last_insert_rowid();" : "");
 
                                     command.Parameters.Clear();
 
@@ -267,7 +267,7 @@ namespace Bee.SQLite
                             {
                                 command.Connection = connection;
                                 command.CommandType = isProcedure == true ? CommandType.StoredProcedure : CommandType.Text;
-                                command.CommandText = queryText + (isProcedure == false ? "; SELECT SCOPE_IDENTITY();" : "");
+                                command.CommandText = queryText + (isProcedure == false ? "; SELECT last_insert_rowid();" : "");
 
                                 if (parameters != null)
                                 {
