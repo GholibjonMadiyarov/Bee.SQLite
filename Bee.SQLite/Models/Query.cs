@@ -11,7 +11,6 @@
         {
             execute = false;
             message = null;
-            result = -1;
             dublicate = false;
         }
     }
