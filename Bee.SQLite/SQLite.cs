@@ -199,7 +199,7 @@ namespace Bee.SQLite
                                 while (index <= queryTexts.Count - 1)
                                 {
                                     command.CommandType = isProcedure == true ? CommandType.StoredProcedure : CommandType.Text;
-                                    command.CommandText = queryTexts[index] + (isProcedure == false ? "; SELECT last_insert_rowid();" : "");
+                                    command.CommandText = queryTexts[index] + (!isProcedure ? "; SELECT last_insert_rowid();" : "");
 
                                     command.Parameters.Clear();
 
@@ -228,7 +228,7 @@ namespace Bee.SQLite
                         catch (SQLiteException e)
                         {
                             transaction.Rollback();
-                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, dublicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false, insertedIds = new List<int?>() };
+                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false, insertedIds = new List<int?>() };
                         }
                         catch (Exception e)
                         {
@@ -293,7 +293,7 @@ namespace Bee.SQLite
                         catch (SQLiteException e)
                         {
                             transaction.Rollback();
-                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, dublicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false, insertedIds = new List<int?>() };
+                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false, insertedIds = new List<int?>() };
                         }
                         catch (Exception e)
                         {
@@ -431,7 +431,7 @@ namespace Bee.SQLite
             }
             catch (SQLiteException e)
             {
-                return new Query { execute = false, message = "Request failed. " + e.Message, dublicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
+                return new Query { execute = false, message = "Request failed. " + e.Message, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
             }
             catch (Exception e)
             {
@@ -496,7 +496,7 @@ namespace Bee.SQLite
                         catch (SQLiteException e)
                         {
                             transaction.Rollback();
-                            return new Query { execute = false, message = "Request failed. " + e.Message, dublicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
+                            return new Query { execute = false, message = "Request failed. " + e.Message, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
                         }
                         catch (Exception e)
                         {
