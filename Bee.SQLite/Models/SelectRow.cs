@@ -6,13 +6,13 @@ namespace Bee.SQLite.Models
     {
         public bool execute { get; set; }
         public string message { get; set; }
-        public Dictionary<string, object> result { get; set; }
+        public Dictionary<string, object> data { get; set; }
 
         public SelectRow() 
         {
             execute = false;
             message = null;
-            result = new Dictionary<string, object>();
+            data = new Dictionary<string, object>();
         }
     }
 }
