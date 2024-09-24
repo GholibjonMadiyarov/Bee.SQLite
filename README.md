@@ -1,6 +1,9 @@
 # Bee.SQLite
 A very simple way to work with the database
 
+## Dependencies
+	System.Data.SQLite 1.0.117
+
 ## Examples
 
 ### Select with out parameters
