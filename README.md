@@ -6,7 +6,7 @@ A very simple way to work with the database
 
 ## Examples
 
-### Select with out parameters
+### Select without parameters
 ```csharp
 using Bee.SQLite;
 
