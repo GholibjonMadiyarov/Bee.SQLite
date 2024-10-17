@@ -8,14 +8,16 @@ namespace Bee.SQLite
 {
     public class SQLite
     {
+        //Connection string
+        public static string connectionString = "data source=Test.db;version=3;page size=4096;cache size=10000;journal mode=Wal;pooling=True;legacy format=False;default timeout=15000";
+        
         /// <summary>
         /// Used to retrieve data from a database.
         /// </summary>
-        /// <param name="connectionString">Connection string.</param>
         /// <param name="queryText">SQL query.</param>
         /// <param name="parameters">Parameters.</param>
         /// <returns> Select model. The response is returned as a list of dictionary type.</returns>
-        public static Select select(string connectionString, string queryText, Dictionary<string, object> parameters = null)
+        public static Select select(string queryText, Dictionary<string, object> parameters = null)
         {
             try
             {
@@ -70,11 +72,10 @@ namespace Bee.SQLite
         /// <summary>
         /// Used to retrieve data from a database.
         /// </summary>
-        /// <param name="connectionString">Connection string.</param>
         /// <param name="queryText">SQL query.</param>
         /// <param name="parameters">Parameters.</param>
         /// <returns> SelectItem model. The first line is returned as a dictionary.</returns>
-        public static SelectRow selectRow(string connectionString, string queryText, Dictionary<string, object> parameters = null)
+        public static SelectRow selectRow(string queryText, Dictionary<string, object> parameters = null)
         {
             try
             {
@@ -125,11 +126,10 @@ namespace Bee.SQLite
         /// <summary>
         /// Used to retrieve data from a database.
         /// </summary>
-        /// <param name="connectionString">Connection string.</param>
         /// <param name="queryText">SQL query.</param>
         /// <param name="parameters">Parameters.</param>
         /// <returns> SelectOne model. The first column of the first row is returned.</returns>
-        public static SelectValue selectValue(string connectionString, string queryText, Dictionary<string, object> parameters = null)
+        public static SelectValue selectValue(string queryText, Dictionary<string, object> parameters = null)
         {
             try
             {
@@ -173,11 +173,10 @@ namespace Bee.SQLite
         /// <summary>
         /// Requests insert for multiple queres.
         /// </summary>
-        /// <param name="connectionString">Connection string.</param>
         /// <param name="queryTexts">The SQL querys is represented as a list.</param>
         /// <param name="parameters">Parameters are given accordingly for each request.</param>
         /// <returns>Query model</returns>
-        public static Insert insert(string connectionString, List<string> queryTexts, List<Dictionary<string, object>> parameters = null)
+        public static Insert insert(List<string> queryTexts, List<Dictionary<string, object>> parameters = null)
         {
             try
             {
@@ -247,11 +246,10 @@ namespace Bee.SQLite
         /// <summary>
         /// Requests insert
         /// </summary>
-        /// <param name="connectionString">Connection string.</param>
         /// <param name="queryText">The SQL query is represented as a text.</param>
         /// <param name="parameters">Parameters</param>
         /// <returns>Query model</returns>
-        public static Insert insert(string connectionString, string queryText, Dictionary<string, object> parameters = null)
+        public static Insert insert(string queryText, Dictionary<string, object> parameters = null)
         {
             try
             {
@@ -311,11 +309,10 @@ namespace Bee.SQLite
         /// <summary>
         /// Executes update requests.
         /// </summary>
-        /// <param name="connectionString">Connection string.</param>
         /// <param name="queryText">The SQL query.</param>
         /// <param name="parameters">Parameters.</param>
         /// <returns>Query model</returns>
-        public static Update update(string connectionString, string queryText, Dictionary<string, object> parameters = null)
+        public static Update update(string queryText, Dictionary<string, object> parameters = null)
         {
             try
             {
@@ -353,11 +350,10 @@ namespace Bee.SQLite
         /// <summary>
         /// Executes delete requests.
         /// </summary>
-        /// <param name="connectionString">Connection string.</param>
         /// <param name="queryText">The SQL query.</param>
         /// <param name="parameters">Parameters.</param>
         /// <returns>Delete model</returns>
-        public static Delete delete(string connectionString, string queryText, Dictionary<string, object> parameters = null)
+        public static Delete delete(string queryText, Dictionary<string, object> parameters = null)
         {
             try
             {
@@ -395,11 +391,10 @@ namespace Bee.SQLite
         /// <summary>
         /// Executes any query with out select requests.
         /// </summary>
-        /// <param name="connectionString">Connection string.</param>
         /// <param name="queryText">The SQL query.</param>
         /// <param name="parameters">Parameters.</param>
         /// <returns>Query model</returns>
-        public static Query query(string connectionString, string queryText, Dictionary<string, object> parameters = null)
+        public static Query query(string queryText, Dictionary<string, object> parameters = null)
         {
             try
             {
@@ -442,11 +437,10 @@ namespace Bee.SQLite
         /// <summary>
         /// Executes any query with out select requests.
         /// </summary>
-        /// <param name="connectionString">Connection string.</param>
         /// <param name="queryText">The SQL query.</param>
         /// <param name="parameters">Parameters.</param>
         /// <returns>Query model</returns>
-        public static Query query(string connectionString, List<string> queryTexts, List<Dictionary<string, object>> parameters = null)
+        public static Query query(List<string> queryTexts, List<Dictionary<string, object>> parameters = null)
         {
             try
             {
