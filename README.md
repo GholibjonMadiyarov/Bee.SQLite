@@ -6,7 +6,7 @@ A very simple way to work with the database
 
 ## Examples
 
-### Select with out parameters
+### Select without parameters
 ```csharp
 using Bee.SQLite;
 
@@ -147,7 +147,7 @@ static void Main(string[] args)
 	};
 	
 	var parameters = new List<Dictionary<string, object>>{
-		new Dictionary<string, object>{{"@name", "Gholibjon"}, {"@lastname", "Madiyaov"}, {"@age", 29}},
+		new Dictionary<string, object>{{"@name", "Gholibjon"}, {"@lastname", "Madiyarov"}, {"@age", 29}},
 		new Dictionary<string, object>{{"@name", "Hujand"}, {"@description", "This is one of the most civilized and hospitable cities in Central Asia."}},
 		new Dictionary<string, object>{{"@name", "Mercedes Benz"}, {"@description", "One of the most perfect and friendly cars in the world."}},
 	};
@@ -180,7 +180,7 @@ static void Main(string[] args)
 	};
 	
 	var parameters = new List<Dictionary<string, object>>{
-		new Dictionary<string, object>{{"@name", "Gholibjon"}, {"@lastname", "Madiyaov"}, {"@age", 29}},
+		new Dictionary<string, object>{{"@name", "Gholibjon"}, {"@lastname", "Madiyarov"}, {"@age", 29}},
 		null,
 		new Dictionary<string, object>{{"@name", "Mercedes Benz"}, {"@description", "One of the most perfect and friendly cars in the world."}},
 	};
