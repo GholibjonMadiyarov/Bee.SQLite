@@ -110,16 +110,18 @@ namespace Bee.SQLite
                                 {
                                     row[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader[reader.GetName(i)];
                                 }
+
+                                return new SelectRow { execute = true, message = "Request completed successfully", data = row, read = true };
                             }
                         }
                     }
                 }
 
-                return new SelectRow { execute = true, message = "Request completed successfully", data = row };
+                return new SelectRow { execute = true, message = "Request completed successfully", data = row, read = false };
             }
             catch(Exception e)
             {
-                return new SelectRow { execute = false, message = "Request failed. " + e.Message , data = new Dictionary<string, object>() };
+                return new SelectRow { execute = false, message = "Request failed. " + e.Message , data = new Dictionary<string, object>(), read = false, exception = true };
             }
         }
 
@@ -157,16 +159,16 @@ namespace Bee.SQLite
                         {
                             if (reader.Read())
                             {
-                                return new SelectValue { execute = true, message = "Request completed successfully", value = reader.IsDBNull(0) ? null : reader[0] };
+                                return new SelectValue { execute = true, message = "Request completed successfully", value = reader.IsDBNull(0) ? null : reader[0], read = true };
                             }
                         }
                     }
                 }
-                return new SelectValue { execute = false, message = "The request was successful, but no result was returned", value = null };
+                return new SelectValue { execute = true, message = "The request was successful, but no result was returned", value = null, read = false };
             }
             catch(Exception e)
             {
-                return new SelectValue { execute = false, message = "Request failed. " + e.Message, value = null};
+                return new SelectValue { execute = false, message = "Request failed. " + e.Message, value = null, exception = true};
             }
         }
 
