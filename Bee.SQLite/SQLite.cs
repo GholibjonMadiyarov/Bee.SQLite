@@ -74,6 +74,64 @@ namespace Bee.SQLite
         /// </summary>
         /// <param name="queryText">SQL query.</param>
         /// <param name="parameters">Parameters.</param>
+        /// <returns> Select model. The response is returned as a list of dictionary type.</returns>
+        public static SelectString selectString(string queryText, Dictionary<string, object> parameters = null)
+        {
+            try
+            {
+                List<Dictionary<string, string>> rows = new List<Dictionary<string, string>>();
+
+                using (SQLiteConnection connection = new SQLiteConnection(connectionString))
+                {
+                    connection.Open();
+                    using (SQLiteCommand command = new SQLiteCommand())
+                    {
+                        command.Connection = connection;
+                        command.CommandType = CommandType.Text;
+                        command.CommandText = queryText;
+
+                        if (parameters != null)
+                        {
+                            foreach (KeyValuePair<string, object> parameter in parameters)
+                            {
+                                if (parameter.Value == null)
+                                    command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
+                                else
+                                    command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                            }
+
+                        }
+
+                        using (SQLiteDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Dictionary<string, string> row = new Dictionary<string, string>();
+
+                                for (int i = 0; i <= reader.FieldCount - 1; i++)
+                                {
+                                    row[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader[reader.GetName(i)].ToString();
+                                }
+
+                                rows.Add(row);
+                            }
+                        }
+                    }
+                }
+
+                return new SelectString { execute = true, message = "Request completed successfully", data = rows };
+            }
+            catch (Exception e)
+            {
+                return new SelectString { execute = false, message = "Request failed. " + e.Message, data = new List<Dictionary<string, string>>() };
+            }
+        }
+
+        /// <summary>
+        /// Used to retrieve data from a database.
+        /// </summary>
+        /// <param name="queryText">SQL query.</param>
+        /// <param name="parameters">Parameters.</param>
         /// <returns> SelectItem model. The first line is returned as a dictionary.</returns>
         public static SelectRow selectRow(string queryText, Dictionary<string, object> parameters = null)
         {

@@ -61,6 +61,7 @@
   <ItemGroup>
     <Compile Include="Models\Insert.cs" />
     <Compile Include="Models\Delete.cs" />
+    <Compile Include="Models\SelectString.cs" />
     <Compile Include="Models\Update.cs" />
     <Compile Include="Models\Query.cs" />
     <Compile Include="Models\SelectValue.cs" />
