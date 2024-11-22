@@ -193,3 +193,37 @@ static void Main(string[] args)
 	}
 }
 ```
+
+### Query
+```csharp
+using Bee.SQLite;
+
+static void Main(string[] args)
+{
+	SQLite.connectionString = "data source=Company.db;version=3;page size=4096;cache size=10000;journal mode=Wal;pooling=True;legacy format=False;default timeout=15000";
+	
+	var queries = new List<string>(){
+		"insert into users(name, lastname, age) values(@name, @lastname, @age)",
+		"insert into cities(name, description) values(@name, @description)",
+		"insert into cars(name, description) values(@name, @description)"
+	};
+	
+	var parameters = new List<Dictionary<string, object>>{
+		new Dictionary<string, object>{{"@name", "Gholibjon"}, {"@lastname", "Madiyarov"}, {"@age", 29}},
+		new Dictionary<string, object>{{"@name", "Hujand"}, {"@description", "This is one of the most civilized and hospitable cities in Central Asia."}},
+		new Dictionary<string, object>{{"@name", "Mercedes Benz"}, {"@description", "One of the most perfect and friendly cars in the world."}},
+	};
+	
+	var q = SQLite.query(queries, parameters);
+	
+	if(q.execute)
+	{
+		Console.WriteLine("Request completed successfully " + q.message);
+	}
+	else
+	{
+		Console.WriteLine("Request failed " + q.message);
+	}
+}
+```
+
