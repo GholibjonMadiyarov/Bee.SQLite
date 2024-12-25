@@ -41,7 +41,6 @@ namespace Bee.SQLite
                                 else
                                     command.Parameters.AddWithValue(parameter.Key, parameter.Value);
                             }
-
                         }
 
                         using (SQLiteDataReader reader = command.ExecuteReader())
@@ -52,7 +51,14 @@ namespace Bee.SQLite
 
                                 for (int i = 0; i <= reader.FieldCount - 1; i++)
                                 {
-                                    row[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader[reader.GetName(i)];
+                                    if (reader.IsDBNull(i))
+                                    {
+                                        row[reader.GetName(i)] = null;
+                                    }
+                                    else
+                                    {
+                                        row[reader.GetName(i)] = reader.GetValue(i);
+                                    }
                                 }
                                 
                                 rows.Add(row);
@@ -61,11 +67,11 @@ namespace Bee.SQLite
                     }
                 }
 
-                return new Select { execute = true, message = "Request completed successfully", data = rows };
+                return new Select { execute = true, message = "Request completed successfully", queryText = queryText, data = rows };
             }
             catch(Exception e)
             {
-                return new Select { execute = false, message = "Request failed. " + e.Message, data = new List<Dictionary<string, object>>() };
+                return new Select { execute = false, message = "Request failed. " + e.Message, queryText = queryText, data = new List<Dictionary<string, object>>() };
             }
         }
 
@@ -110,7 +116,14 @@ namespace Bee.SQLite
 
                                 for (int i = 0; i <= reader.FieldCount - 1; i++)
                                 {
-                                    row[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader[reader.GetName(i)].ToString();
+                                    if (reader.IsDBNull(i))
+                                    {
+                                        row[reader.GetName(i)] = null;
+                                    }
+                                    else
+                                    {
+                                        row[reader.GetName(i)] = reader.GetValue(i).ToString();
+                                    }
                                 }
 
                                 rows.Add(row);
@@ -166,7 +179,14 @@ namespace Bee.SQLite
                             {
                                 for (int i = 0; i <= reader.FieldCount - 1; i++)
                                 {
-                                    row[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader[reader.GetName(i)];
+                                    if (reader.IsDBNull(i))
+                                    {
+                                        row[reader.GetName(i)] = null;
+                                    }
+                                    else
+                                    {
+                                        row[reader.GetName(i)] = reader.GetValue(i);
+                                    }
                                 }
 
                                 return new SelectRow { execute = true, message = "Request completed successfully", data = row, read = true };
@@ -188,7 +208,7 @@ namespace Bee.SQLite
         /// </summary>
         /// <param name="queryText">SQL query.</param>
         /// <param name="parameters">Parameters.</param>
-        /// <returns> SelectOne model. The first column of the first row is returned.</returns>
+        /// <returns> SelectValue model. The first column of the first row is returned.</returns>
         public static SelectValue selectValue(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -217,7 +237,7 @@ namespace Bee.SQLite
                         {
                             if (reader.Read())
                             {
-                                return new SelectValue { execute = true, message = "Request completed successfully", value = reader.IsDBNull(0) ? null : reader[0], read = true };
+                                return new SelectValue { execute = true, message = "Request completed successfully", value = reader.IsDBNull(0) ? null : reader.GetValue(0), read = true };
                             }
                         }
                     }
@@ -227,6 +247,104 @@ namespace Bee.SQLite
             catch(Exception e)
             {
                 return new SelectValue { execute = false, message = "Request failed. " + e.Message, value = null, exception = true};
+            }
+        }
+
+        /// <summary>
+        /// Used to retrieve data from a database.
+        /// </summary>
+        /// <param name="queryText">SQL query.</param>
+        /// <param name="parameters">Parameters.</param>
+        /// <returns> SelectValueString model. The first column of the first row is returned.</returns>
+        public static SelectValueString selectValueString(string queryText, Dictionary<string, object> parameters = null)
+        {
+            try
+            {
+                using (SQLiteConnection connection = new SQLiteConnection(connectionString))
+                {
+                    connection.Open();
+                    using (SQLiteCommand command = new SQLiteCommand())
+                    {
+                        command.Connection = connection;
+                        command.CommandType = CommandType.Text;
+                        command.CommandText = queryText;
+
+                        if (parameters != null)
+                        {
+                            foreach (var parameter in parameters)
+                            {
+                                if (parameter.Value == null)
+                                    command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
+                                else
+                                    command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                            }
+                        }
+
+                        using (SQLiteDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                return new SelectValueString { execute = true, message = "Request completed successfully", value = reader.IsDBNull(0) ? null : reader.GetValue(0).ToString(), read = true };
+                            }
+                        }
+                    }
+                }
+                return new SelectValueString { execute = true, message = "The request was successful, but no result was returned", value = null, read = false };
+            }
+            catch (Exception e)
+            {
+                return new SelectValueString { execute = false, message = "Request failed. " + e.Message, value = null, exception = true };
+            }
+        }
+
+        /// <summary>
+        /// Used to retrieve data from a database.
+        /// </summary>
+        /// <param name="queryText">SQL query.</param>
+        /// <param name="parameters">Parameters.</param>
+        /// <returns> SelectValueInteger model. The first column of the first row is returned.</returns>
+        public static SelectValueInteger selectValueInteger(string queryText, Dictionary<string, object> parameters = null)
+        {
+            try
+            {
+                using (SQLiteConnection connection = new SQLiteConnection(connectionString))
+                {
+                    connection.Open();
+                    using (SQLiteCommand command = new SQLiteCommand())
+                    {
+                        command.Connection = connection;
+                        command.CommandType = CommandType.Text;
+                        command.CommandText = queryText;
+
+                        if (parameters != null)
+                        {
+                            foreach (var parameter in parameters)
+                            {
+                                if (parameter.Value == null)
+                                    command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
+                                else
+                                    command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                            }
+                        }
+
+                        using (SQLiteDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                if(reader.IsDBNull(0))
+                                    return new SelectValueInteger { execute = true, message = "Request completed successfully", value = null, read = true };
+
+                               return new SelectValueInteger { execute = true, message = "Request completed successfully", value = Convert.ToInt32(reader.GetValue(0)), read = true };
+                            }
+                        }
+                    }
+                }
+
+                return new SelectValueInteger { execute = true, message = "The request was successful, but no result was returned", value = null, read = false };
+            }
+            catch (Exception e)
+            {
+                return new SelectValueInteger { execute = false, message = "Request failed. " + e.Message, value = null, exception = true };
             }
         }
 
