@@ -3,14 +3,32 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
+using System.Reflection;
 
 namespace Bee.SQLite
 {
     public class SQLite
     {
         //Connection string
-        public static string connectionString = "data source=Test.db;version=3;page size=4096;cache size=10000;journal mode=Wal;pooling=True;legacy format=False;default timeout=15000";
-        
+        public static string connectionString = "data source=Test.db;version=3;page size=4096;cache size=10000;journal mode=Wal;pooling=True;legacy format=False;default timeout=15000;";
+        public static string logPath = null;
+
+        public void version(string path = null)
+        {
+            if (path != null)
+            {
+                Log.info(path, "Version:" + Assembly.GetExecutingAssembly()?.GetName()?.Version?.ToString());
+            }
+        }
+
+        public void version()
+        {
+            if (logPath != null)
+            {
+                Log.info(logPath, "Version:" + Assembly.GetExecutingAssembly()?.GetName()?.Version?.ToString());
+            }
+        }
+
         /// <summary>
         /// Used to retrieve data from a database.
         /// </summary>
@@ -21,7 +39,7 @@ namespace Bee.SQLite
         {
             try
             {
-                List<Dictionary<string, object>> rows = new List<Dictionary<string, object>>();
+                var rows = new List<Dictionary<string, object>>();
 
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
@@ -37,9 +55,13 @@ namespace Bee.SQLite
                             foreach (KeyValuePair<string, object> parameter in parameters)
                             {
                                 if (parameter.Value == null)
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
+                                }
                                 else
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                                }
                             }
                         }
 
@@ -51,7 +73,7 @@ namespace Bee.SQLite
 
                                 for (int i = 0; i <= reader.FieldCount - 1; i++)
                                 {
-                                    if (reader.IsDBNull(i))
+                                    if (reader.IsDBNull(i) || reader.GetValue(i) == null)
                                     {
                                         row[reader.GetName(i)] = null;
                                     }
@@ -71,7 +93,7 @@ namespace Bee.SQLite
             }
             catch(Exception e)
             {
-                return new Select { execute = false, message = "Request failed. " + e.Message, queryText = queryText, data = new List<Dictionary<string, object>>() };
+                return new Select { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace, queryText = queryText, data = new List<Dictionary<string, object>>() };
             }
         }
 
@@ -85,7 +107,7 @@ namespace Bee.SQLite
         {
             try
             {
-                List<Dictionary<string, string>> rows = new List<Dictionary<string, string>>();
+                var rows = new List<Dictionary<string, string>>();
 
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
@@ -101,22 +123,25 @@ namespace Bee.SQLite
                             foreach (KeyValuePair<string, object> parameter in parameters)
                             {
                                 if (parameter.Value == null)
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
+                                }
                                 else
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                                }
                             }
-
                         }
 
                         using (SQLiteDataReader reader = command.ExecuteReader())
                         {
                             while (reader.Read())
                             {
-                                Dictionary<string, string> row = new Dictionary<string, string>();
+                                var row = new Dictionary<string, string>();
 
                                 for (int i = 0; i <= reader.FieldCount - 1; i++)
                                 {
-                                    if (reader.IsDBNull(i))
+                                    if (reader.IsDBNull(i) || reader.GetValue(i) == null)
                                     {
                                         row[reader.GetName(i)] = null;
                                     }
@@ -136,7 +161,7 @@ namespace Bee.SQLite
             }
             catch (Exception e)
             {
-                return new SelectString { execute = false, message = "Request failed. " + e.Message, data = new List<Dictionary<string, string>>() };
+                return new SelectString { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace, data = new List<Dictionary<string, string>>() };
             }
         }
 
@@ -155,6 +180,7 @@ namespace Bee.SQLite
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
                     connection.Open();
+
                     using (SQLiteCommand command = new SQLiteCommand())
                     {
                         command.Connection = connection;
@@ -166,11 +192,14 @@ namespace Bee.SQLite
                             foreach (var parameter in parameters)
                             {
                                 if (parameter.Value == null)
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
+                                }
                                 else
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                                }
                             }
-
                         }
 
                         using (SQLiteDataReader reader = command.ExecuteReader())
@@ -179,7 +208,7 @@ namespace Bee.SQLite
                             {
                                 for (int i = 0; i <= reader.FieldCount - 1; i++)
                                 {
-                                    if (reader.IsDBNull(i))
+                                    if (reader.IsDBNull(i) || reader.GetValue(i) == null)
                                     {
                                         row[reader.GetName(i)] = null;
                                     }
@@ -199,7 +228,7 @@ namespace Bee.SQLite
             }
             catch(Exception e)
             {
-                return new SelectRow { execute = false, message = "Request failed. " + e.Message , data = new Dictionary<string, object>(), read = false, exception = true };
+                return new SelectRow { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace, data = new Dictionary<string, object>(), read = false, exception = true };
             }
         }
 
@@ -227,9 +256,13 @@ namespace Bee.SQLite
                             foreach (var parameter in parameters)
                             {
                                 if (parameter.Value == null)
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
+                                }
                                 else
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                                }
                             }
                         }
 
@@ -237,7 +270,7 @@ namespace Bee.SQLite
                         {
                             if (reader.Read())
                             {
-                                return new SelectValue { execute = true, message = "Request completed successfully", value = reader.IsDBNull(0) ? null : reader.GetValue(0), read = true };
+                                return new SelectValue { execute = true, message = "Request completed successfully", value = (reader.IsDBNull(0) || reader.GetValue(0) == null) ? null : reader.GetValue(0), read = true };
                             }
                         }
                     }
@@ -246,7 +279,7 @@ namespace Bee.SQLite
             }
             catch(Exception e)
             {
-                return new SelectValue { execute = false, message = "Request failed. " + e.Message, value = null, exception = true};
+                return new SelectValue { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace, value = null, exception = true};
             }
         }
 
@@ -274,9 +307,13 @@ namespace Bee.SQLite
                             foreach (var parameter in parameters)
                             {
                                 if (parameter.Value == null)
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
+                                }
                                 else
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                                }
                             }
                         }
 
@@ -284,7 +321,7 @@ namespace Bee.SQLite
                         {
                             if (reader.Read())
                             {
-                                return new SelectValueString { execute = true, message = "Request completed successfully", value = reader.IsDBNull(0) ? null : reader.GetValue(0).ToString(), read = true };
+                                return new SelectValueString { execute = true, message = "Request completed successfully", value = (reader.IsDBNull(0) || reader.GetValue(0) == null) ? null : reader.GetValue(0).ToString(), read = true };
                             }
                         }
                     }
@@ -293,7 +330,7 @@ namespace Bee.SQLite
             }
             catch (Exception e)
             {
-                return new SelectValueString { execute = false, message = "Request failed. " + e.Message, value = null, exception = true };
+                return new SelectValueString { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace, value = null, exception = true };
             }
         }
 
@@ -309,7 +346,7 @@ namespace Bee.SQLite
             {
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
-                    connection.Open();
+                    connection.Open(); 
                     using (SQLiteCommand command = new SQLiteCommand())
                     {
                         command.Connection = connection;
@@ -321,9 +358,13 @@ namespace Bee.SQLite
                             foreach (var parameter in parameters)
                             {
                                 if (parameter.Value == null)
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
+                                }
                                 else
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                                }
                             }
                         }
 
@@ -331,10 +372,12 @@ namespace Bee.SQLite
                         {
                             if (reader.Read())
                             {
-                                if(reader.IsDBNull(0))
+                                if (reader.IsDBNull(0))
+                                {
                                     return new SelectValueInteger { execute = true, message = "Request completed successfully", value = null, read = true };
+                                }
 
-                               return new SelectValueInteger { execute = true, message = "Request completed successfully", value = Convert.ToInt32(reader.GetValue(0)), read = true };
+                                return new SelectValueInteger { execute = true, message = "Request completed successfully", value = Convert.ToInt32(reader.GetValue(0)), read = true };
                             }
                         }
                     }
@@ -344,7 +387,7 @@ namespace Bee.SQLite
             }
             catch (Exception e)
             {
-                return new SelectValueInteger { execute = false, message = "Request failed. " + e.Message, value = null, exception = true };
+                return new SelectValueInteger { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace, value = null, exception = true };
             }
         }
 
@@ -369,12 +412,13 @@ namespace Bee.SQLite
                             using (SQLiteCommand command = new SQLiteCommand())
                             {
                                 command.Connection = connection;
+                                command.Transaction = transaction;
+                                command.CommandType = CommandType.Text;
 
                                 int index = 0;
 
                                 while (index <= queryTexts.Count - 1)
                                 {
-                                    command.CommandType =  CommandType.Text;
                                     command.CommandText = queryTexts[index];
 
                                     command.Parameters.Clear();
@@ -390,8 +434,6 @@ namespace Bee.SQLite
                                         }
                                     }
 
-                                    command.Transaction = transaction;
-
                                     var r = command.ExecuteNonQuery();
 
                                     index++;
@@ -405,19 +447,19 @@ namespace Bee.SQLite
                         catch (SQLiteException e)
                         {
                             transaction.Rollback();
-                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
+                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, stackTrace = e.StackTrace, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
                         }
                         catch (Exception e)
                         {
                             transaction.Rollback();
-                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message };
+                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, stackTrace = e.StackTrace };
                         }
                     }
                 }
             }
             catch(Exception e)
             {
-                return new Insert { execute = false, message = "Request failed. " + e.Message };
+                return new Insert { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace};
             }
         }
 
@@ -444,6 +486,7 @@ namespace Bee.SQLite
                                 command.Connection = connection;
                                 command.CommandType = CommandType.Text;
                                 command.CommandText = queryText ;
+                                command.Transaction = transaction;
 
                                 if (parameters != null)
                                 {
@@ -456,8 +499,6 @@ namespace Bee.SQLite
                                     }
                                 }
 
-                                command.Transaction = transaction;
-
                                 command.ExecuteNonQuery();
 
                                 transaction.Commit();
@@ -468,19 +509,19 @@ namespace Bee.SQLite
                         catch (SQLiteException e)
                         {
                             transaction.Rollback();
-                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
+                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, stackTrace = e.StackTrace, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
                         }
                         catch (Exception e)
                         {
                             transaction.Rollback();
-                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message };
+                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, stackTrace = e.StackTrace};
                         }
                     }
                 }
             }
             catch (Exception e)
             {
-                return new Insert { execute = false, message = "Request failed. " + e.Message };
+                return new Insert { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace };
             }
         }
 
@@ -497,6 +538,7 @@ namespace Bee.SQLite
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
                     connection.Open();
+
                     using (SQLiteCommand command = new SQLiteCommand())
                     {
                         command.Connection = connection;
@@ -508,20 +550,25 @@ namespace Bee.SQLite
                             foreach (var parameter in parameters)
                             {
                                 if (parameter.Value == null)
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
+                                }
                                 else
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                                }
                             }
                         }
 
                         int affectedRowCount = command.ExecuteNonQuery();
+
                         return new Update { execute = true, message = "Request completed successfully!", affectedRowCount = affectedRowCount };
                     }
                 }
             }
             catch (Exception e)
             {
-                return new Update { execute = false, message = "Request failed. " + e.Message };
+                return new Update { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace};
             }
         }
 
@@ -538,6 +585,7 @@ namespace Bee.SQLite
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
                     connection.Open();
+
                     using (SQLiteCommand command = new SQLiteCommand())
                     {
                         command.Connection = connection;
@@ -549,20 +597,25 @@ namespace Bee.SQLite
                             foreach (var parameter in parameters)
                             {
                                 if (parameter.Value == null)
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
+                                }
                                 else
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                                }
                             }
                         }
 
                         int affectedRowCount = command.ExecuteNonQuery();
+
                         return new Delete { execute = true, message = "Request completed successfully!", affectedRowCount = affectedRowCount };
                     }
                 }
             }
             catch (Exception e)
             {
-                return new Delete { execute = false, message = "Request failed. " + e.Message };
+                return new Delete { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace };
             }
         }
 
@@ -591,9 +644,13 @@ namespace Bee.SQLite
                             foreach (var parameter in parameters)
                             {
                                 if (parameter.Value == null)
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
+                                }
                                 else
+                                {
                                     command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                                }
                             }
                         }
 
@@ -604,11 +661,11 @@ namespace Bee.SQLite
             }
             catch (SQLiteException e)
             {
-                return new Query { execute = false, message = "Request failed. " + e.Message, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
+                return new Query { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
             }
             catch (Exception e)
             {
-                return new Query { execute = false, message = "Request failed. " + e.Message };
+                return new Query { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace };
             }
         }
 
@@ -634,8 +691,10 @@ namespace Bee.SQLite
                             {
                                 command.Connection = connection;
                                 command.CommandType = CommandType.Text;
+                                command.Transaction = transaction;
 
                                 int index = 0;
+
                                 while (index <= queryTexts.Count - 1)
                                 {
                                     command.CommandText = queryTexts[index];
@@ -649,14 +708,17 @@ namespace Bee.SQLite
                                             foreach (KeyValuePair<string, object> parameter in parameters[index])
                                             {
                                                 if (parameter.Value == null)
+                                                {
                                                     command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
+                                                }
                                                 else
+                                                {
                                                     command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                                                }
                                             }
                                         }
                                     }
 
-                                    command.Transaction = transaction;
                                     command.ExecuteNonQuery();
                                     index++;
                                 }
@@ -670,19 +732,65 @@ namespace Bee.SQLite
                         {
                             transaction.Rollback();
 
-                            return new Query { execute = false, message = "Request failed. " + e.Message, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
+                            return new Query { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
                         }
                         catch (Exception e)
                         {
                             transaction.Rollback();
-                            return new Query { execute = false, message = "Request failed. " + e.Message };
+                            return new Query { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace };
                         }
                     }
                 }
             }
             catch(Exception e)
             {
-                return new Query { execute = false, message = "Request failed. " + e.Message };
+                return new Query { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace };
+            }
+        }
+
+        /// <summary>
+        /// Set password
+        /// </summary>
+        /// <param name="passwordText">Password Text</param>
+        /// <returns>Boolean</returns>
+        public static bool setPassword(string passwordText)
+        {
+            try
+            {
+                using (SQLiteConnection connection = new SQLiteConnection(connectionString))
+                {
+                    connection.SetPassword(passwordText);
+                    connection.Open();
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Change password
+        /// </summary>
+        /// <param name="passwordText">Password Text</param>
+        /// <returns>Boolean</returns>
+        public static bool changePassword(string passwordText)
+        {
+            try
+            {
+                using (SQLiteConnection connection = new SQLiteConnection(connectionString))
+                {
+                    connection.ChangePassword(passwordText);
+                    connection.Open();
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
             }
         }
     }

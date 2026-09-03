@@ -4,6 +4,7 @@
     {
         public bool execute { get; set; }
         public string message { get; set; }
+        public string stackTrace { get; set; }
         public int result { get; set; }
         public bool duplicate { get; set; }
 
@@ -11,6 +12,7 @@
         {
             execute = false;
             message = null;
+            stackTrace = null;
             duplicate = false;
         }
     }

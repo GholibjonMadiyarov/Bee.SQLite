@@ -6,6 +6,7 @@ namespace Bee.SQLite.Models
     {
         public bool execute { get; set; }
         public string message { get; set; }
+        public string stackTrace { get; set; }
         public bool duplicate { get; set; }
         public long? insertedId { get; set; }
 
@@ -13,6 +14,7 @@ namespace Bee.SQLite.Models
         {
             execute = false;
             message = null;
+            stackTrace = null;
             duplicate = false;
             insertedId = null;
         }
