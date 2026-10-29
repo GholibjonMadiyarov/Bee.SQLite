@@ -7,13 +7,18 @@ using System.Reflection;
 
 namespace Bee.SQLite
 {
+    /// <summary>Static methods for working with an SQLite database. Methods do not throw: errors are returned in the result object.</summary>
     public class SQLite
     {
-        //Connection string
+        /// <summary>Connection string used by all methods.</summary>
         public static string connectionString = "data source=Test.db;version=3;page size=4096;cache size=10000;journal mode=Wal;pooling=True;legacy format=False;default timeout=15000;";
+
+        /// <summary>Log file path used by the instance method version(). Null disables logging.</summary>
         public static string logPath = null;
 
-        public void version(string path = null)
+        /// <summary>Writes the library version to a log file.</summary>
+        /// <param name="path">Log file path. If null, nothing is written.</param>
+        public static void version(string path = null)
         {
             if (path != null)
             {
@@ -21,6 +26,7 @@ namespace Bee.SQLite
             }
         }
 
+        /// <summary>Writes the library version to <c>logPath</c>. If <c>logPath</c> is null, nothing is written.</summary>
         public void version()
         {
             if (logPath != null)
@@ -29,12 +35,10 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>
-        /// Used to retrieve data from a database.
-        /// </summary>
+        /// <summary>Runs a SELECT query and returns all rows.</summary>
         /// <param name="queryText">SQL query.</param>
-        /// <param name="parameters">Parameters.</param>
-        /// <returns> Select model. The response is returned as a list of dictionary type.</returns>
+        /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
+        /// <returns><c>data</c>: rows as "column → value"; NULL becomes null.</returns>
         public static Select select(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -50,18 +54,11 @@ namespace Bee.SQLite
                         command.CommandType = CommandType.Text;
                         command.CommandText = queryText;
 
-                        if (parameters != null)
+                        if (parameters != null && parameters.Count > 0)
                         {
                             foreach (KeyValuePair<string, object> parameter in parameters)
                             {
-                                if (parameter.Value == null)
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
-                                }
-                                else
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, parameter.Value);
-                                }
+                                command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
                             }
                         }
 
@@ -69,7 +66,7 @@ namespace Bee.SQLite
                         {
                             while (reader.Read())
                             {
-                                Dictionary<string, object> row = new Dictionary<string, object>();
+                                var row = new Dictionary<string, object>();
 
                                 for (int i = 0; i <= reader.FieldCount - 1; i++)
                                 {
@@ -97,12 +94,10 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>
-        /// Used to retrieve data from a database.
-        /// </summary>
+        /// <summary>Runs a SELECT query and returns all rows with values converted to strings.</summary>
         /// <param name="queryText">SQL query.</param>
-        /// <param name="parameters">Parameters.</param>
-        /// <returns> Select model. The response is returned as a list of dictionary type.</returns>
+        /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
+        /// <returns><c>data</c>: rows as "column → string"; NULL becomes null.</returns>
         public static SelectString selectString(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -122,14 +117,7 @@ namespace Bee.SQLite
                         {
                             foreach (KeyValuePair<string, object> parameter in parameters)
                             {
-                                if (parameter.Value == null)
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
-                                }
-                                else
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, parameter.Value);
-                                }
+                                command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
                             }
                         }
 
@@ -165,12 +153,10 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>
-        /// Used to retrieve data from a database.
-        /// </summary>
+        /// <summary>Runs a SELECT query and returns the first row.</summary>
         /// <param name="queryText">SQL query.</param>
-        /// <param name="parameters">Parameters.</param>
-        /// <returns> SelectItem model. The first line is returned as a dictionary.</returns>
+        /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
+        /// <returns><c>data</c>: first row as "column → value". <c>read</c> is false if there are no rows.</returns>
         public static SelectRow selectRow(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -191,14 +177,7 @@ namespace Bee.SQLite
                         {
                             foreach (var parameter in parameters)
                             {
-                                if (parameter.Value == null)
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
-                                }
-                                else
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, parameter.Value);
-                                }
+                                command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
                             }
                         }
 
@@ -232,12 +211,10 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>
-        /// Used to retrieve data from a database.
-        /// </summary>
+        /// <summary>Runs a query and returns the first column of the first row.</summary>
         /// <param name="queryText">SQL query.</param>
-        /// <param name="parameters">Parameters.</param>
-        /// <returns> SelectValue model. The first column of the first row is returned.</returns>
+        /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
+        /// <returns><c>value</c>: the value, or null. <c>read</c> is false if there are no rows.</returns>
         public static SelectValue selectValue(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -255,14 +232,7 @@ namespace Bee.SQLite
                         {
                             foreach (var parameter in parameters)
                             {
-                                if (parameter.Value == null)
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
-                                }
-                                else
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, parameter.Value);
-                                }
+                                command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
                             }
                         }
 
@@ -283,12 +253,10 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>
-        /// Used to retrieve data from a database.
-        /// </summary>
+        /// <summary>Runs a query and returns the first column of the first row as a string.</summary>
         /// <param name="queryText">SQL query.</param>
-        /// <param name="parameters">Parameters.</param>
-        /// <returns> SelectValueString model. The first column of the first row is returned.</returns>
+        /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
+        /// <returns><c>value</c>: the value as string, or null. <c>read</c> is false if there are no rows.</returns>
         public static SelectValueString selectValueString(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -306,14 +274,7 @@ namespace Bee.SQLite
                         {
                             foreach (var parameter in parameters)
                             {
-                                if (parameter.Value == null)
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
-                                }
-                                else
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, parameter.Value);
-                                }
+                                command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
                             }
                         }
 
@@ -334,12 +295,10 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>
-        /// Used to retrieve data from a database.
-        /// </summary>
+        /// <summary>Runs a query and returns the first column of the first row as an int.</summary>
         /// <param name="queryText">SQL query.</param>
-        /// <param name="parameters">Parameters.</param>
-        /// <returns> SelectValueInteger model. The first column of the first row is returned.</returns>
+        /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
+        /// <returns><c>value</c>: the value as int, or null. <c>read</c> is false if there are no rows.</returns>
         public static SelectValueInteger selectValueInteger(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -357,14 +316,7 @@ namespace Bee.SQLite
                         {
                             foreach (var parameter in parameters)
                             {
-                                if (parameter.Value == null)
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
-                                }
-                                else
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, parameter.Value);
-                                }
+                                command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
                             }
                         }
 
@@ -391,19 +343,112 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>
-        /// Requests insert for multiple queres.
-        /// </summary>
-        /// <param name="queryTexts">The SQL querys is represented as a list.</param>
-        /// <param name="parameters">Parameters are given accordingly for each request.</param>
-        /// <returns>Query model</returns>
+        /// <summary>Runs an INSERT query in a transaction.</summary>
+        /// <param name="queryText">SQL query.</param>
+        /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
+        /// <returns><c>insertedId</c>: rowid of the inserted row. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
+        public static Insert insert(string queryText, Dictionary<string, object> parameters = null)
+        {
+            try
+            {
+                long? insertedId = null;
+                List<long?> insertedIds = new List<long?>();
+
+                using (SQLiteConnection connection = new SQLiteConnection(connectionString))
+                {
+                    connection.Open();
+                    connection.SetExtendedResultCodes(true);
+
+                    using (SQLiteTransaction transaction = connection.BeginTransaction())
+                    {
+                        try
+                        {
+                            using (SQLiteCommand command = new SQLiteCommand())
+                            {
+                                command.Connection = connection;
+                                command.CommandType = CommandType.Text;
+                                command.CommandText = queryText;
+                                command.Transaction = transaction;
+
+                                if (parameters != null)
+                                {
+                                    foreach (var parameter in parameters)
+                                    {
+                                        command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
+                                    }
+                                }
+
+                                int count = command.ExecuteNonQuery();
+
+                                if (count > 0)
+                                {
+                                    insertedId = connection.LastInsertRowId;
+                                    insertedIds.Add(insertedId);
+                                }
+
+                                transaction.Commit();
+
+                                return new Insert
+                                {
+                                    execute = true,
+                                    message = "Request completed successfully",
+                                    insertedId = insertedId,
+                                    insertedIds = insertedIds
+                                };
+                            }
+                        }
+                        catch (SQLiteException e)
+                        {
+                            transaction.Rollback();
+                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, stackTrace = e.StackTrace, duplicate = e.ResultCode == SQLiteErrorCode.Constraint_Unique || e.ResultCode == SQLiteErrorCode.Constraint_PrimaryKey };
+                        }
+                        catch (Exception e)
+                        {
+                            transaction.Rollback();
+                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, stackTrace = e.StackTrace };
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                return new Insert { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace };
+            }
+        }
+
+        /// <summary>Runs several INSERT queries in one transaction. If one fails, all are rolled back.</summary>
+        /// <param name="queryTexts">SQL queries, run in order.</param>
+        /// <param name="parameters">Parameters for each query, in the same order. An item may be null.</param>
+        /// <returns><c>insertedIds</c>: rowid for each query (null if nothing was inserted). <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
         public static Insert insert(List<string> queryTexts, List<Dictionary<string, object>> parameters = null)
         {
             try
             {
+                if (queryTexts == null || queryTexts.Count == 0)
+                {
+                    return new Insert
+                    {
+                        execute = false,
+                        message = "No queries provided"
+                    };
+                }
+
+                if (parameters != null && parameters.Count != queryTexts.Count)
+                {
+                    return new Insert
+                    {
+                        execute = false,
+                        message = "The number of parameters does not match the number of queries"
+                    };
+                }
+
+                List<long?> insertedIds = new List<long?>();
+                int index = 0;
+
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
                     connection.Open();
+                    connection.SetExtendedResultCodes(true);
 
                     using (SQLiteTransaction transaction = connection.BeginTransaction())
                     {
@@ -415,39 +460,53 @@ namespace Bee.SQLite
                                 command.Transaction = transaction;
                                 command.CommandType = CommandType.Text;
 
-                                int index = 0;
+                                index = 0;
 
                                 while (index <= queryTexts.Count - 1)
                                 {
+                                    command.CommandType = CommandType.Text;
                                     command.CommandText = queryTexts[index];
 
                                     command.Parameters.Clear();
 
                                     if (parameters != null)
                                     {
-                                        if (parameters[index] != null)
+                                        if (parameters != null && parameters.Count > 0 && parameters[index] != null)
                                         {
                                             foreach (var parameter in parameters[index])
                                             {
-                                                command.Parameters.AddWithValue(parameter.Key, parameter.Value != null ? parameter.Value : DBNull.Value);
+                                                command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
                                             }
                                         }
                                     }
 
-                                    var r = command.ExecuteNonQuery();
+                                    int count = command.ExecuteNonQuery();
+
+                                    if (count > 0)
+                                    {
+                                        insertedIds.Add(connection.LastInsertRowId);
+                                    }
+                                    else
+                                    {
+                                        insertedIds.Add(null);
+                                    }
 
                                     index++;
                                 }
 
                                 transaction.Commit();
 
-                                return new Insert { execute = true, message = "Request completed successfully", insertedId = connection.LastInsertRowId };
+                                return new Insert { 
+                                    execute = true, 
+                                    message = "Request completed successfully", 
+                                    insertedIds = insertedIds 
+                                };
                             }
                         }
                         catch (SQLiteException e)
                         {
                             transaction.Rollback();
-                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, stackTrace = e.StackTrace, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
+                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, stackTrace = e.StackTrace, duplicate = e.ResultCode == SQLiteErrorCode.Constraint_Unique || e.ResultCode == SQLiteErrorCode.Constraint_PrimaryKey };
                         }
                         catch (Exception e)
                         {
@@ -463,74 +522,10 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>
-        /// Requests insert
-        /// </summary>
-        /// <param name="queryText">The SQL query is represented as a text.</param>
-        /// <param name="parameters">Parameters</param>
-        /// <returns>Query model</returns>
-        public static Insert insert(string queryText, Dictionary<string, object> parameters = null)
-        {
-            try
-            {
-                using (SQLiteConnection connection = new SQLiteConnection(connectionString))
-                {
-                    connection.Open();
-
-                    using (SQLiteTransaction transaction = connection.BeginTransaction())
-                    {
-                        try
-                        {
-                            using (SQLiteCommand command = new SQLiteCommand())
-                            {
-                                command.Connection = connection;
-                                command.CommandType = CommandType.Text;
-                                command.CommandText = queryText ;
-                                command.Transaction = transaction;
-
-                                if (parameters != null)
-                                {
-                                    foreach (var parameter in parameters)
-                                    {
-                                        if (parameter.Value == null)
-                                            command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
-                                        else
-                                            command.Parameters.AddWithValue(parameter.Key, parameter.Value);
-                                    }
-                                }
-
-                                command.ExecuteNonQuery();
-
-                                transaction.Commit();
-
-                                return new Insert { execute = true, message = "Request completed successfully", insertedId = connection.LastInsertRowId};
-                            }
-                        }
-                        catch (SQLiteException e)
-                        {
-                            transaction.Rollback();
-                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, stackTrace = e.StackTrace, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
-                        }
-                        catch (Exception e)
-                        {
-                            transaction.Rollback();
-                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, stackTrace = e.StackTrace};
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                return new Insert { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace };
-            }
-        }
-
-        /// <summary>
-        /// Executes update requests.
-        /// </summary>
-        /// <param name="queryText">The SQL query.</param>
-        /// <param name="parameters">Parameters.</param>
-        /// <returns>Query model</returns>
+        /// <summary>Runs an UPDATE query.</summary>
+        /// <param name="queryText">SQL query.</param>
+        /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
+        /// <returns><c>affectedRowCount</c>: number of changed rows.</returns>
         public static Update update(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -545,18 +540,11 @@ namespace Bee.SQLite
                         command.CommandType = CommandType.Text;
                         command.CommandText = queryText;
 
-                        if (parameters != null)
+                        if (parameters != null && parameters.Count > 0)
                         {
                             foreach (var parameter in parameters)
                             {
-                                if (parameter.Value == null)
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
-                                }
-                                else
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, parameter.Value);
-                                }
+                                command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
                             }
                         }
 
@@ -572,12 +560,102 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>
-        /// Executes delete requests.
-        /// </summary>
-        /// <param name="queryText">The SQL query.</param>
-        /// <param name="parameters">Parameters.</param>
-        /// <returns>Delete model</returns>
+        /// <summary>Runs several UPDATE queries in one transaction. If one fails, all are rolled back.</summary>
+        /// <param name="queryTexts">SQL queries, run in order.</param>
+        /// <param name="parameters">Parameters for each query, in the same order. An item may be null.</param>
+        /// <returns><c>affectedRowCount</c>: total number of changed rows.</returns>
+        public static Update update(List<string> queryTexts, List<Dictionary<string, object>> parameters = null)
+        {
+            try
+            {
+                if (parameters != null && parameters.Count != queryTexts.Count)
+                {
+                    return new Update { execute = false, message = "The number of parameters does not match the number of queries" };
+                }
+
+                using (SQLiteConnection connection = new SQLiteConnection(connectionString))
+                {
+                    connection.Open();
+
+                    int index = 0;
+                    int affectedRowCount = 0;
+
+                    using (SQLiteTransaction transaction = connection.BeginTransaction())
+                    {
+                        try
+                        {
+                            using (SQLiteCommand command = new SQLiteCommand())
+                            {
+                                command.Connection = connection;
+                                command.Transaction = transaction;
+                                command.CommandType = CommandType.Text;
+
+                                while (index <= queryTexts.Count - 1)
+                                {
+                                    command.CommandText = queryTexts[index];
+
+                                    command.Parameters.Clear();
+
+                                    if (parameters != null && parameters.Count > 0)
+                                    {
+                                        if (parameters[index] != null)
+                                        {
+                                            foreach (var parameter in parameters[index])
+                                            {
+                                                command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
+                                            }
+                                        }
+                                    }
+
+                                    int i = command.ExecuteNonQuery();
+
+                                    index++;
+
+                                    affectedRowCount += i;
+                                }
+
+                                transaction.Commit();
+
+                                return new Update { 
+                                    execute = true, 
+                                    message = "Request completed successfully", 
+                                    affectedRowCount = affectedRowCount 
+                                };
+                            }
+                        }
+                        catch (SQLiteException e)
+                        {
+                            transaction.Rollback();
+
+                            return new Update { 
+                                execute = false, 
+                                message = "SQLiteException. Transaction canceled. " + e.Message, 
+                                exception = true
+                            };
+                        }
+                        catch (Exception e)
+                        {
+                            transaction.Rollback();
+
+                            return new Update { 
+                                execute = false, 
+                                message = "Exception. Transaction canceled. " + e.Message, 
+                                exception = true
+                            };
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                return new Update { execute = false, message = "Exception. Request failed. " + e.Message, exception = true };
+            }
+        }
+
+        /// <summary>Runs a DELETE query.</summary>
+        /// <param name="queryText">SQL query.</param>
+        /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
+        /// <returns><c>affectedRowCount</c>: number of deleted rows.</returns>
         public static Delete delete(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -596,14 +674,7 @@ namespace Bee.SQLite
                         {
                             foreach (var parameter in parameters)
                             {
-                                if (parameter.Value == null)
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
-                                }
-                                else
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, parameter.Value);
-                                }
+                                command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
                             }
                         }
 
@@ -619,19 +690,22 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>
-        /// Executes any query with out select requests.
-        /// </summary>
-        /// <param name="queryText">The SQL query.</param>
-        /// <param name="parameters">Parameters.</param>
-        /// <returns>Query model</returns>
+        /// <summary>Runs any SQL query: SELECT, INSERT, UPDATE, DELETE, CREATE and others. To get a new id, use RETURNING.</summary>
+        /// <param name="queryText">SQL query.</param>
+        /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
+        /// <returns><c>data[0]</c>: returned rows (SELECT or RETURNING). <c>affectedRowCount</c>: number of changed rows. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
         public static Query query(string queryText, Dictionary<string, object> parameters = null)
         {
             try
             {
+                var rows = new List<Dictionary<string, object>>();
+
+                int affectedRowCount =  0;
+
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
                     connection.Open();
+                    connection.SetExtendedResultCodes(true);
 
                     using (SQLiteCommand command = new SQLiteCommand())
                     {
@@ -639,49 +713,108 @@ namespace Bee.SQLite
                         command.CommandType = CommandType.Text;
                         command.CommandText = queryText;
 
-                        if (parameters != null)
+                        if (parameters != null && parameters.Count > 0)
                         {
-                            foreach (var parameter in parameters)
+                            foreach (KeyValuePair<string, object> parameter in parameters)
                             {
-                                if (parameter.Value == null)
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
-                                }
-                                else
-                                {
-                                    command.Parameters.AddWithValue(parameter.Key, parameter.Value);
-                                }
+                                command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
                             }
                         }
 
-                        command.ExecuteNonQuery();
-                        return new Query { execute = true, message = "Request completed successfully!" };
+                        using (SQLiteDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                var row = new Dictionary<string, object>();
+
+                                for (int i = 0; i <= reader.FieldCount - 1; i++)
+                                {
+                                    if (reader.IsDBNull(i) || reader.GetValue(i) == null)
+                                    {
+                                        row[reader.GetName(i)] = null;
+                                    }
+                                    else
+                                    {
+                                        row[reader.GetName(i)] = reader.GetValue(i);
+                                    }
+                                }
+
+                                rows.Add(row);
+                            }
+
+                            affectedRowCount = Math.Max(reader.RecordsAffected, 0);
+                        }
                     }
                 }
+
+                return new Query { 
+                    execute = true, 
+                    message = "Request completed successfully", 
+                    queryText = queryText, 
+                    data = new List<List<Dictionary<string, object>>> { rows }, 
+                    affectedRowCount = affectedRowCount 
+                };
             }
             catch (SQLiteException e)
             {
-                return new Query { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
+                return new Query { 
+                    execute = false, 
+                    exception = true,
+                    message = "Request failed. " + e.Message,
+                    exceptionType = e.GetType().Name,
+                    exceptionNumber = e.ErrorCode,
+                    duplicate = e.ResultCode == SQLiteErrorCode.Constraint_Unique || e.ResultCode == SQLiteErrorCode.Constraint_PrimaryKey,
+                    stackTrace = e.StackTrace, 
+                    queryText = queryText
+                };
             }
             catch (Exception e)
             {
-                return new Query { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace };
+                return new Query {
+                    execute = false, 
+                    message = "Request failed. " + e.Message, 
+                    stackTrace = e.StackTrace, 
+                    queryText = queryText, 
+                };
             }
         }
 
-        /// <summary>
-        /// Executes any query with out select requests.
-        /// </summary>
-        /// <param name="queryText">The SQL query.</param>
-        /// <param name="parameters">Parameters.</param>
-        /// <returns>Query model</returns>
+        /// <summary>Runs several SQL queries of any type in one transaction. If one fails, all are rolled back.</summary>
+        /// <param name="queryTexts">SQL queries, run in order.</param>
+        /// <param name="parameters">Parameters for each query, in the same order. An item may be null.</param>
+        /// <returns><c>data[i]</c>: rows returned by query i. <c>affectedRowCount</c>: total number of changed rows. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
         public static Query query(List<string> queryTexts, List<Dictionary<string, object>> parameters = null)
         {
             try
             {
+                if (queryTexts == null || queryTexts.Count == 0)
+                {
+                    return new Query
+                    {
+                        execute = false,
+                        message = "No queries provided"
+                    };
+                }
+
+                if (parameters != null && parameters.Count != queryTexts.Count)
+                {
+                    return new Query
+                    {
+                        execute = false,
+                        message = "The number of parameters does not match the number of queries"
+                    };
+                }
+
+                var data = new List<List<Dictionary<string, object>>>();
+
+                int affectedRowCount = 0;
+                int index = 0;
+
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
                     connection.Open();
+
+                    connection.SetExtendedResultCodes(true);
 
                     using (SQLiteTransaction transaction = connection.BeginTransaction())
                     {
@@ -690,69 +823,107 @@ namespace Bee.SQLite
                             using (SQLiteCommand command = new SQLiteCommand())
                             {
                                 command.Connection = connection;
-                                command.CommandType = CommandType.Text;
                                 command.Transaction = transaction;
+                                command.CommandType = CommandType.Text;
 
-                                int index = 0;
+                                index = 0;
 
                                 while (index <= queryTexts.Count - 1)
                                 {
+                                    var rows = new List<Dictionary<string, object>>();
+
+                                    command.CommandType = CommandType.Text;
                                     command.CommandText = queryTexts[index];
 
                                     command.Parameters.Clear();
 
                                     if (parameters != null)
                                     {
-                                        if (parameters[index] != null)
+                                        if (parameters != null && parameters.Count > 0 && parameters[index] != null)
                                         {
-                                            foreach (KeyValuePair<string, object> parameter in parameters[index])
+                                            foreach (var parameter in parameters[index])
                                             {
-                                                if (parameter.Value == null)
-                                                {
-                                                    command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
-                                                }
-                                                else
-                                                {
-                                                    command.Parameters.AddWithValue(parameter.Key, parameter.Value);
-                                                }
+                                                command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
                                             }
                                         }
                                     }
 
-                                    command.ExecuteNonQuery();
+                                    using (SQLiteDataReader reader = command.ExecuteReader())
+                                    {
+                                        while (reader.Read())
+                                        {
+                                            var row = new Dictionary<string, object>();
+
+                                            for (int i = 0; i <= reader.FieldCount - 1; i++)
+                                            {
+                                                if (reader.IsDBNull(i) || reader.GetValue(i) == null)
+                                                {
+                                                    row[reader.GetName(i)] = null;
+                                                }
+                                                else
+                                                {
+                                                    row[reader.GetName(i)] = reader.GetValue(i);
+                                                }
+                                            }
+
+                                            rows.Add(row);
+                                        }
+
+                                        affectedRowCount += Math.Max(reader.RecordsAffected, 0);
+
+                                        data.Add(rows);
+                                    }
+
                                     index++;
                                 }
 
                                 transaction.Commit();
 
-                                return new Query { execute = true, message = "Request completed successfully!"};
+                                return new Query { 
+                                    execute = true, 
+                                    message = "Request completed successfully", 
+                                    data = data, 
+                                    affectedRowCount = affectedRowCount 
+                                };
                             }
                         }
                         catch (SQLiteException e)
                         {
                             transaction.Rollback();
 
-                            return new Query { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace, duplicate = (e.ErrorCode == (int)SQLiteErrorCode.Constraint) ? true : false };
+                            return new Query { 
+                                execute = false, 
+                                message = "Transaction canceled. " + e.Message, 
+                                stackTrace = e.StackTrace, 
+                                duplicate = e.ResultCode == SQLiteErrorCode.Constraint_Unique || e.ResultCode == SQLiteErrorCode.Constraint_PrimaryKey,
+                                exception = true,
+                                exceptionType = e.GetType().Name,
+                                exceptionNumber = e.ErrorCode
+                            };
                         }
                         catch (Exception e)
                         {
                             transaction.Rollback();
-                            return new Query { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace };
+                            return new Query { 
+                                execute = false, 
+                                message = "Transaction canceled. " + e.Message, 
+                                stackTrace = e.StackTrace,
+                                exception = true,
+                                exceptionType = e.GetType().Name
+                            };
                         }
                     }
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 return new Query { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace };
             }
         }
 
-        /// <summary>
-        /// Set password
-        /// </summary>
-        /// <param name="passwordText">Password Text</param>
-        /// <returns>Boolean</returns>
+        /// <summary>Sets the password for opening an encrypted database. Requires the SQLite Encryption Extension (SEE).</summary>
+        /// <param name="passwordText">Password.</param>
+        /// <returns>True on success, false on error (also when SEE is not installed).</returns>
         public static bool setPassword(string passwordText)
         {
             try
@@ -771,11 +942,9 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>
-        /// Change password
-        /// </summary>
-        /// <param name="passwordText">Password Text</param>
-        /// <returns>Boolean</returns>
+        /// <summary>Changes the database password. Requires the SQLite Encryption Extension (SEE).</summary>
+        /// <param name="passwordText">New password.</param>
+        /// <returns>True on success, false on error (also when SEE is not installed).</returns>
         public static bool changePassword(string passwordText)
         {
             try
