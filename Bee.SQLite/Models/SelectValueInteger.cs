@@ -5,7 +5,7 @@
         public bool execute { get; set; }
         public string message { get; set; }
         public string stackTrace { get; set; }
-        public int? value { get; set; }
+        public long? value { get; set; }
         public bool read { get; set; }
         public bool exception { get; set; }
 

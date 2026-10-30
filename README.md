@@ -24,11 +24,11 @@ SQLite.connectionString = "data source=Company.db;version=3;journal mode=Wal;poo
 | `selectRow` | First row | `data`, `read` |
 | `selectValue` | First value | `value` (`object`), `read` |
 | `selectValueString` | First value as string | `value` (`string`), `read` |
-| `selectValueInteger` | First value as int | `value` (`int?`), `read` |
-| `insert` | INSERT | `insertedId` / `insertedIds`, `duplicate` |
+| `selectValueInteger` | First value as long | `value` (`long?`), `read` |
+| `insert` | INSERT | `insertedId`, `insertedIds`, `duplicate` |
 | `update` | UPDATE | `affectedRowCount` |
 | `delete` | DELETE | `affectedRowCount` |
-| `query` | Any SQL | `data`, `affectedRowCount`, `duplicate` |
+| `query` | Any SQL | `data`, `affectedRowCount`, `insertedId` / `insertedIds`, `duplicate` |
 
 Every result has `execute` (success), `message` and `stackTrace`.
 `read` is `false` when the query returned no rows.
@@ -64,7 +64,7 @@ var user = SQLite.selectRow("select * from users where id = @id",
 if (user.read)
     Console.WriteLine(user.data["name"]);
 
-int? count = SQLite.selectValueInteger("select count(*) from users").value;
+long? count = SQLite.selectValueInteger("select count(*) from users").value;
 ```
 
 ### Insert
@@ -95,7 +95,8 @@ var parameters = new List<Dictionary<string, object>>
 };
 
 var insert = SQLite.insert(queries, parameters);
-// insert.insertedIds — id of each inserted row
+// insert.insertedIds[i] — id added by query i (or null)
+// insert.insertedId     — the last added id
 ```
 
 ### Update and delete
@@ -112,28 +113,34 @@ Console.WriteLine(update.affectedRowCount + " / " + delete.affectedRowCount);
 
 ### Query
 
-Runs any statement. Rows are in `data[0]`. To get a new id, use `RETURNING`:
+Runs any statement. Rows are in `data[0]`. For a query that starts with `INSERT` or `REPLACE` and adds a row, `insertedId` holds the new rowid:
 
 ```csharp
-var q = SQLite.query("insert into users(name) values(@name) returning id",
+var q = SQLite.query("insert into users(name) values(@name)",
     new Dictionary<string, object> { { "@name", "Ali" } });
 
-long id = (long)q.data[0][0]["id"];
+if (q.execute)
+    Console.WriteLine("New id: " + q.insertedId);
 ```
 
-Several statements in one transaction; `data[i]` holds the rows of query `i`:
+Several statements in one transaction. Index `i` refers to query `i`: `data[i]` holds its rows, `insertedIds[i]` its new rowid (or `null`):
 
 ```csharp
 var q = SQLite.query(new List<string>
 {
     "update users set age = age + 1",
+    "insert into logs(text) values('age updated')",
     "select count(*) as total from users"
 });
 
-Console.WriteLine(q.affectedRowCount);       // changed rows
-Console.WriteLine(q.data[1][0]["total"]);    // result of the 2nd query
+Console.WriteLine(q.affectedRowCount);       // changed rows in total
+Console.WriteLine(q.insertedIds[1]);         // id from the 2nd query
+Console.WriteLine(q.data[2][0]["total"]);    // result of the 3rd query
 ```
 
 ## Encryption
 
 `setPassword` and `changePassword` require the paid [SQLite Encryption Extension (SEE)](https://www.sqlite.org/see). Without it they return `false`.
+
+- `changePassword` changes the password of the database.
+- `setPassword` only checks that the database opens with the password. To use an encrypted database, add `password=...` to `connectionString`.

@@ -295,10 +295,10 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>Runs a query and returns the first column of the first row as an int.</summary>
+        /// <summary>Runs a query and returns the first column of the first row as a long.</summary>
         /// <param name="queryText">SQL query.</param>
         /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
-        /// <returns><c>value</c>: the value as int, or null. <c>read</c> is false if there are no rows.</returns>
+        /// <returns><c>value</c>: the value converted with Convert.ToInt64, or null. <c>read</c> is false if there are no rows.</returns>
         public static SelectValueInteger selectValueInteger(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -329,7 +329,7 @@ namespace Bee.SQLite
                                     return new SelectValueInteger { execute = true, message = "Request completed successfully", value = null, read = true };
                                 }
 
-                                return new SelectValueInteger { execute = true, message = "Request completed successfully", value = Convert.ToInt32(reader.GetValue(0)), read = true };
+                                return new SelectValueInteger { execute = true, message = "Request completed successfully", value = Convert.ToInt64(reader.GetValue(0)), read = true };
                             }
                         }
                     }
@@ -343,10 +343,10 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>Runs an INSERT query in a transaction.</summary>
+        /// <summary>Runs an INSERT query.</summary>
         /// <param name="queryText">SQL query.</param>
         /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
-        /// <returns><c>insertedId</c>: rowid of the inserted row. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
+        /// <returns><c>insertedId</c>: rowid of the inserted row, or null if nothing was inserted. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
         public static Insert insert(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -359,56 +359,41 @@ namespace Bee.SQLite
                     connection.Open();
                     connection.SetExtendedResultCodes(true);
 
-                    using (SQLiteTransaction transaction = connection.BeginTransaction())
+                    using (SQLiteCommand command = new SQLiteCommand())
                     {
-                        try
+                        command.Connection = connection;
+                        command.CommandType = CommandType.Text;
+                        command.CommandText = queryText;
+
+                        if (parameters != null)
                         {
-                            using (SQLiteCommand command = new SQLiteCommand())
+                            foreach (var parameter in parameters)
                             {
-                                command.Connection = connection;
-                                command.CommandType = CommandType.Text;
-                                command.CommandText = queryText;
-                                command.Transaction = transaction;
-
-                                if (parameters != null)
-                                {
-                                    foreach (var parameter in parameters)
-                                    {
-                                        command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
-                                    }
-                                }
-
-                                int count = command.ExecuteNonQuery();
-
-                                if (count > 0)
-                                {
-                                    insertedId = connection.LastInsertRowId;
-                                    insertedIds.Add(insertedId);
-                                }
-
-                                transaction.Commit();
-
-                                return new Insert
-                                {
-                                    execute = true,
-                                    message = "Request completed successfully",
-                                    insertedId = insertedId,
-                                    insertedIds = insertedIds
-                                };
+                                command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
                             }
                         }
-                        catch (SQLiteException e)
+
+                        int count = command.ExecuteNonQuery();
+
+                        if (count > 0)
                         {
-                            transaction.Rollback();
-                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, stackTrace = e.StackTrace, duplicate = e.ResultCode == SQLiteErrorCode.Constraint_Unique || e.ResultCode == SQLiteErrorCode.Constraint_PrimaryKey };
+                            insertedId = connection.LastInsertRowId;
+                            insertedIds.Add(insertedId);
                         }
-                        catch (Exception e)
+
+                        return new Insert
                         {
-                            transaction.Rollback();
-                            return new Insert { execute = false, message = "Transaction canceled. " + e.Message, stackTrace = e.StackTrace };
-                        }
+                            execute = true,
+                            message = "Request completed successfully",
+                            insertedId = insertedId,
+                            insertedIds = insertedIds
+                        };
                     }
                 }
+            }
+            catch (SQLiteException e)
+            {
+                return new Insert { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace, duplicate = e.ResultCode == SQLiteErrorCode.Constraint_Unique || e.ResultCode == SQLiteErrorCode.Constraint_PrimaryKey };
             }
             catch (Exception e)
             {
@@ -419,7 +404,7 @@ namespace Bee.SQLite
         /// <summary>Runs several INSERT queries in one transaction. If one fails, all are rolled back.</summary>
         /// <param name="queryTexts">SQL queries, run in order.</param>
         /// <param name="parameters">Parameters for each query, in the same order. An item may be null.</param>
-        /// <returns><c>insertedIds</c>: rowid for each query (null if nothing was inserted). <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
+        /// <returns><c>insertedIds[i]</c>: rowid added by query i, or null. <c>insertedId</c>: the last added rowid. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
         public static Insert insert(List<string> queryTexts, List<Dictionary<string, object>> parameters = null)
         {
             try
@@ -443,6 +428,7 @@ namespace Bee.SQLite
                 }
 
                 List<long?> insertedIds = new List<long?>();
+                long? insertedId = null;
                 int index = 0;
 
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
@@ -484,7 +470,8 @@ namespace Bee.SQLite
 
                                     if (count > 0)
                                     {
-                                        insertedIds.Add(connection.LastInsertRowId);
+                                        insertedId = connection.LastInsertRowId;
+                                        insertedIds.Add(insertedId);
                                     }
                                     else
                                     {
@@ -498,8 +485,9 @@ namespace Bee.SQLite
 
                                 return new Insert { 
                                     execute = true, 
-                                    message = "Request completed successfully", 
-                                    insertedIds = insertedIds 
+                                    message = "Request completed successfully",
+                                    insertedId = insertedId,
+                                    insertedIds = insertedIds
                                 };
                             }
                         }
@@ -533,6 +521,7 @@ namespace Bee.SQLite
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
                     connection.Open();
+                    connection.SetExtendedResultCodes(true);
 
                     using (SQLiteCommand command = new SQLiteCommand())
                     {
@@ -550,7 +539,7 @@ namespace Bee.SQLite
 
                         int affectedRowCount = command.ExecuteNonQuery();
 
-                        return new Update { execute = true, message = "Request completed successfully!", affectedRowCount = affectedRowCount };
+                        return new Update { execute = true, message = "Request completed successfully", affectedRowCount = affectedRowCount };
                     }
                 }
             }
@@ -568,6 +557,15 @@ namespace Bee.SQLite
         {
             try
             {
+                if (queryTexts == null || queryTexts.Count == 0)
+                {
+                    return new Update
+                    {
+                        execute = false,
+                        message = "No queries provided"
+                    };
+                }
+
                 if (parameters != null && parameters.Count != queryTexts.Count)
                 {
                     return new Update { execute = false, message = "The number of parameters does not match the number of queries" };
@@ -576,6 +574,7 @@ namespace Bee.SQLite
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
                     connection.Open();
+                    connection.SetExtendedResultCodes(true);
 
                     int index = 0;
                     int affectedRowCount = 0;
@@ -663,6 +662,7 @@ namespace Bee.SQLite
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
                     connection.Open();
+                    connection.SetExtendedResultCodes(true);
 
                     using (SQLiteCommand command = new SQLiteCommand())
                     {
@@ -680,7 +680,7 @@ namespace Bee.SQLite
 
                         int affectedRowCount = command.ExecuteNonQuery();
 
-                        return new Delete { execute = true, message = "Request completed successfully!", affectedRowCount = affectedRowCount };
+                        return new Delete { execute = true, message = "Request completed successfully", affectedRowCount = affectedRowCount };
                     }
                 }
             }
@@ -690,17 +690,18 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>Runs any SQL query: SELECT, INSERT, UPDATE, DELETE, CREATE and others. To get a new id, use RETURNING.</summary>
+        /// <summary>Runs any SQL query: SELECT, INSERT, UPDATE, DELETE, CREATE and others.</summary>
         /// <param name="queryText">SQL query.</param>
         /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
-        /// <returns><c>data[0]</c>: returned rows (SELECT or RETURNING). <c>affectedRowCount</c>: number of changed rows. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
+        /// <returns><c>data[0]</c>: returned rows (SELECT or RETURNING). <c>affectedRowCount</c>: number of changed rows. <c>insertedId</c>: rowid of the new row if the query starts with INSERT or REPLACE and added a row, otherwise null. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
         public static Query query(string queryText, Dictionary<string, object> parameters = null)
         {
             try
             {
                 var rows = new List<Dictionary<string, object>>();
 
-                int affectedRowCount =  0;
+                int affectedRowCount = 0;
+                long? insertedId = null;
 
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
@@ -743,6 +744,13 @@ namespace Bee.SQLite
                             }
 
                             affectedRowCount = Math.Max(reader.RecordsAffected, 0);
+
+                            string text = queryText.TrimStart().ToUpperInvariant();
+
+                            if (affectedRowCount > 0 && (text.StartsWith("INSERT") || text.StartsWith("REPLACE")))
+                            {
+                                insertedId = connection.LastInsertRowId;
+                            }
                         }
                     }
                 }
@@ -752,7 +760,8 @@ namespace Bee.SQLite
                     message = "Request completed successfully", 
                     queryText = queryText, 
                     data = new List<List<Dictionary<string, object>>> { rows }, 
-                    affectedRowCount = affectedRowCount 
+                    affectedRowCount = affectedRowCount,
+                    insertedId = insertedId
                 };
             }
             catch (SQLiteException e)
@@ -782,11 +791,18 @@ namespace Bee.SQLite
         /// <summary>Runs several SQL queries of any type in one transaction. If one fails, all are rolled back.</summary>
         /// <param name="queryTexts">SQL queries, run in order.</param>
         /// <param name="parameters">Parameters for each query, in the same order. An item may be null.</param>
-        /// <returns><c>data[i]</c>: rows returned by query i. <c>affectedRowCount</c>: total number of changed rows. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
+        /// <returns><c>data[i]</c>: rows returned by query i. <c>affectedRowCount</c>: total number of changed rows. <c>insertedIds[i]</c>: rowid added by query i (INSERT or REPLACE), otherwise null. <c>insertedId</c>: the last added rowid. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
         public static Query query(List<string> queryTexts, List<Dictionary<string, object>> parameters = null)
         {
             try
             {
+                var data = new List<List<Dictionary<string, object>>>();
+
+                int affectedRowCount = 0;
+                int index = 0;
+                long? insertedId = null;
+                var insertedIds = new List<long?>();
+
                 if (queryTexts == null || queryTexts.Count == 0)
                 {
                     return new Query
@@ -804,11 +820,6 @@ namespace Bee.SQLite
                         message = "The number of parameters does not match the number of queries"
                     };
                 }
-
-                var data = new List<List<Dictionary<string, object>>>();
-
-                int affectedRowCount = 0;
-                int index = 0;
 
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
@@ -837,14 +848,11 @@ namespace Bee.SQLite
 
                                     command.Parameters.Clear();
 
-                                    if (parameters != null)
+                                    if (parameters != null && parameters.Count > 0 && parameters[index] != null)
                                     {
-                                        if (parameters != null && parameters.Count > 0 && parameters[index] != null)
+                                        foreach (var parameter in parameters[index])
                                         {
-                                            foreach (var parameter in parameters[index])
-                                            {
-                                                command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
-                                            }
+                                            command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
                                         }
                                     }
 
@@ -869,9 +877,23 @@ namespace Bee.SQLite
                                             rows.Add(row);
                                         }
 
-                                        affectedRowCount += Math.Max(reader.RecordsAffected, 0);
+                                        int count = Math.Max(reader.RecordsAffected, 0);
+
+                                        affectedRowCount += count;
 
                                         data.Add(rows);
+
+                                        string text = queryTexts[index].TrimStart().ToUpperInvariant();
+
+                                        if (count > 0 && (text.StartsWith("INSERT") || text.StartsWith("REPLACE")))
+                                        {
+                                            insertedId = connection.LastInsertRowId;
+                                            insertedIds.Add(insertedId);
+                                        }
+                                        else
+                                        {
+                                            insertedIds.Add(null);
+                                        }
                                     }
 
                                     index++;
@@ -883,7 +905,9 @@ namespace Bee.SQLite
                                     execute = true, 
                                     message = "Request completed successfully", 
                                     data = data, 
-                                    affectedRowCount = affectedRowCount 
+                                    affectedRowCount = affectedRowCount,
+                                    insertedId = insertedId,
+                                    insertedIds = insertedIds
                                 };
                             }
                         }
@@ -921,9 +945,9 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>Sets the password for opening an encrypted database. Requires the SQLite Encryption Extension (SEE).</summary>
+        /// <summary>Checks that the database opens with this password. The password is not stored; other methods use <c>connectionString</c>. Requires the SQLite Encryption Extension (SEE).</summary>
         /// <param name="passwordText">Password.</param>
-        /// <returns>True on success, false on error (also when SEE is not installed).</returns>
+        /// <returns>True if the database opened, false on error (also when SEE is not installed).</returns>
         public static bool setPassword(string passwordText)
         {
             try
@@ -951,8 +975,8 @@ namespace Bee.SQLite
             {
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
-                    connection.ChangePassword(passwordText);
                     connection.Open();
+                    connection.ChangePassword(passwordText);
                 }
 
                 return true;
