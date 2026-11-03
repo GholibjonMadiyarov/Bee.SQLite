@@ -203,7 +203,7 @@ namespace Bee.SQLite
                     }
                 }
 
-                return new SelectRow { execute = true, message = "Request completed successfully", data = row, read = false };
+                return new SelectRow { execute = true, message = "The request was successful, but no result was returned", data = row, read = false };
             }
             catch(Exception e)
             {
@@ -245,6 +245,7 @@ namespace Bee.SQLite
                         }
                     }
                 }
+
                 return new SelectValue { execute = true, message = "The request was successful, but no result was returned", value = null, read = false };
             }
             catch(Exception e)
@@ -287,6 +288,7 @@ namespace Bee.SQLite
                         }
                     }
                 }
+
                 return new SelectValueString { execute = true, message = "The request was successful, but no result was returned", value = null, read = false };
             }
             catch (Exception e)
@@ -295,10 +297,10 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>Runs a query and returns the first column of the first row as a long.</summary>
+        /// <summary>Runs a query and returns the first column of the first row as an int.</summary>
         /// <param name="queryText">SQL query.</param>
         /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
-        /// <returns><c>value</c>: the value converted with Convert.ToInt64, or null. <c>read</c> is false if there are no rows.</returns>
+        /// <returns><c>value</c>: the value converted with Convert.ToInt32, or null. <c>read</c> is false if there are no rows. A value outside the int range returns <c>execute</c> = false.</returns>
         public static SelectValueInteger selectValueInteger(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -329,7 +331,7 @@ namespace Bee.SQLite
                                     return new SelectValueInteger { execute = true, message = "Request completed successfully", value = null, read = true };
                                 }
 
-                                return new SelectValueInteger { execute = true, message = "Request completed successfully", value = Convert.ToInt64(reader.GetValue(0)), read = true };
+                                return new SelectValueInteger { execute = true, message = "Request completed successfully", value = Convert.ToInt32(reader.GetValue(0)), read = true };
                             }
                         }
                     }
@@ -401,10 +403,10 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>Runs several INSERT queries in one transaction. If one fails, all are rolled back.</summary>
+        /// <summary>Runs several INSERT queries in one transaction. If one fails or inserts no rows, all are rolled back.</summary>
         /// <param name="queryTexts">SQL queries, run in order.</param>
         /// <param name="parameters">Parameters for each query, in the same order. An item may be null.</param>
-        /// <returns><c>insertedIds[i]</c>: rowid added by query i, or null. <c>insertedId</c>: the last added rowid. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
+        /// <returns><c>insertedIds[i]</c>: rowid added by query i. <c>insertedId</c>: the last added rowid. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation. If a query inserts no rows, <c>execute</c> is false and <c>queryText</c>/<c>parameter</c> show that query.</returns>
         public static Insert insert(List<string> queryTexts, List<Dictionary<string, object>> parameters = null)
         {
             try
@@ -466,17 +468,23 @@ namespace Bee.SQLite
                                         }
                                     }
 
-                                    int count = command.ExecuteNonQuery();
+                                    int i = command.ExecuteNonQuery();
 
-                                    if (count > 0)
+                                    if (i == 0)
                                     {
-                                        insertedId = connection.LastInsertRowId;
-                                        insertedIds.Add(insertedId);
+                                        transaction.Rollback();
+
+                                        return new Insert
+                                        {
+                                            execute = false,
+                                            message = "Transaction canceled. Query " + (index + 1) + " did not change any rows",
+                                            queryText = queryTexts[index],
+                                            parameter = parameters != null ? parameters[index] : null
+                                        };
                                     }
-                                    else
-                                    {
-                                        insertedIds.Add(null);
-                                    }
+
+                                    insertedId = connection.LastInsertRowId;
+                                    insertedIds.Add(insertedId);
 
                                     index++;
                                 }
@@ -513,7 +521,7 @@ namespace Bee.SQLite
         /// <summary>Runs an UPDATE query.</summary>
         /// <param name="queryText">SQL query.</param>
         /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
-        /// <returns><c>affectedRowCount</c>: number of changed rows.</returns>
+        /// <returns><c>affectedRowCount</c>: number of changed rows. If no rows match, <c>execute</c> is false, <c>exception</c> is false and <c>message</c> is "No rows were changed". On an SQL error <c>exception</c> is true.</returns>
         public static Update update(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -539,20 +547,25 @@ namespace Bee.SQLite
 
                         int affectedRowCount = command.ExecuteNonQuery();
 
-                        return new Update { execute = true, message = "Request completed successfully", affectedRowCount = affectedRowCount };
+                        if(affectedRowCount > 0)
+                        {
+                            return new Update { execute = true, message = "Request completed successfully", affectedRowCount = affectedRowCount };
+                        }
+
+                        return new Update { execute = false, message = "No rows were changed", affectedRowCount = 0, queryText = queryText, parameter = parameters };
                     }
                 }
             }
             catch (Exception e)
             {
-                return new Update { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace};
+                return new Update { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace, exception = true, queryText = queryText, parameter = parameters };
             }
         }
 
-        /// <summary>Runs several UPDATE queries in one transaction. If one fails, all are rolled back.</summary>
+        /// <summary>Runs several UPDATE queries in one transaction. If one fails or changes no rows, all are rolled back.</summary>
         /// <param name="queryTexts">SQL queries, run in order.</param>
         /// <param name="parameters">Parameters for each query, in the same order. An item may be null.</param>
-        /// <returns><c>affectedRowCount</c>: total number of changed rows.</returns>
+        /// <returns><c>affectedRowCount</c>: total number of changed rows. If a query changes no rows, <c>execute</c> is false and <c>queryText</c>/<c>parameter</c> show that query.</returns>
         public static Update update(List<string> queryTexts, List<Dictionary<string, object>> parameters = null)
         {
             try
@@ -608,9 +621,22 @@ namespace Bee.SQLite
 
                                     int i = command.ExecuteNonQuery();
 
-                                    index++;
+                                    if (i == 0)
+                                    {
+                                        transaction.Rollback();
+
+                                        return new Update
+                                        {
+                                            execute = false,
+                                            message = "Transaction canceled. Query " + (index + 1) + " did not change any rows",
+                                            queryText = queryTexts[index],
+                                            parameter = parameters != null ? parameters[index] : null
+                                        };
+                                    }
 
                                     affectedRowCount += i;
+
+                                    index++;
                                 }
 
                                 transaction.Commit();
@@ -654,7 +680,7 @@ namespace Bee.SQLite
         /// <summary>Runs a DELETE query.</summary>
         /// <param name="queryText">SQL query.</param>
         /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
-        /// <returns><c>affectedRowCount</c>: number of deleted rows.</returns>
+        /// <returns><c>affectedRowCount</c>: number of deleted rows. If no rows match, <c>execute</c> is false, <c>exception</c> is false and <c>message</c> is "No rows were changed". On an SQL error <c>exception</c> is true.</returns>
         public static Delete delete(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -680,20 +706,25 @@ namespace Bee.SQLite
 
                         int affectedRowCount = command.ExecuteNonQuery();
 
-                        return new Delete { execute = true, message = "Request completed successfully", affectedRowCount = affectedRowCount };
+                        if (affectedRowCount > 0)
+                        {
+                            return new Delete { execute = true, message = "Request completed successfully", affectedRowCount = affectedRowCount };
+                        }
+
+                        return new Delete { execute = false, message = "No rows were changed", affectedRowCount = 0 };
                     }
                 }
             }
             catch (Exception e)
             {
-                return new Delete { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace };
+                return new Delete { execute = false, message = "Request failed. " + e.Message, stackTrace = e.StackTrace, exception = true };
             }
         }
 
         /// <summary>Runs any SQL query: SELECT, INSERT, UPDATE, DELETE, CREATE and others.</summary>
         /// <param name="queryText">SQL query.</param>
         /// <param name="parameters">Parameters (name → value). A null value is sent as NULL.</param>
-        /// <returns><c>data[0]</c>: returned rows (SELECT or RETURNING). <c>affectedRowCount</c>: number of changed rows. <c>insertedId</c>: rowid of the new row if the query starts with INSERT or REPLACE and added a row, otherwise null. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
+        /// <returns><c>data[0]</c>: returned rows (SELECT or RETURNING). <c>affectedRowCount</c>: number of changed rows; counted only for queries that start with INSERT, REPLACE, UPDATE or DELETE, otherwise 0. <c>insertedId</c>: rowid of the new row if the query starts with INSERT or REPLACE and added a row, otherwise null. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
         public static Query query(string queryText, Dictionary<string, object> parameters = null)
         {
             try
@@ -743,11 +774,14 @@ namespace Bee.SQLite
                                 rows.Add(row);
                             }
 
-                            affectedRowCount = Math.Max(reader.RecordsAffected, 0);
-
                             string text = queryText.TrimStart().ToUpperInvariant();
 
-                            if (affectedRowCount > 0 && (text.StartsWith("INSERT") || text.StartsWith("REPLACE")))
+                            bool insert = text.StartsWith("INSERT") || text.StartsWith("REPLACE");
+                            bool change = insert || text.StartsWith("UPDATE") || text.StartsWith("DELETE");
+
+                            affectedRowCount = change ? Math.Max(reader.RecordsAffected, 0) : 0;
+
+                            if (affectedRowCount > 0 && insert)
                             {
                                 insertedId = connection.LastInsertRowId;
                             }
@@ -788,10 +822,10 @@ namespace Bee.SQLite
             }
         }
 
-        /// <summary>Runs several SQL queries of any type in one transaction. If one fails, all are rolled back.</summary>
+        /// <summary>Runs several SQL queries of any type in one transaction. If one fails, or a query that starts with INSERT, REPLACE, UPDATE or DELETE changes no rows, all are rolled back.</summary>
         /// <param name="queryTexts">SQL queries, run in order.</param>
         /// <param name="parameters">Parameters for each query, in the same order. An item may be null.</param>
-        /// <returns><c>data[i]</c>: rows returned by query i. <c>affectedRowCount</c>: total number of changed rows. <c>insertedIds[i]</c>: rowid added by query i (INSERT or REPLACE), otherwise null. <c>insertedId</c>: the last added rowid. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation.</returns>
+        /// <returns><c>data[i]</c>: rows returned by query i. <c>affectedRowCount</c>: total number of rows changed by INSERT, REPLACE, UPDATE and DELETE queries. <c>insertedIds[i]</c>: rowid added by query i (INSERT or REPLACE), otherwise null. <c>insertedId</c>: the last added rowid. <c>duplicate</c> is true on a UNIQUE or PRIMARY KEY violation. If a query changes no rows, <c>execute</c> is false and <c>queryText</c> shows that query.</returns>
         public static Query query(List<string> queryTexts, List<Dictionary<string, object>> parameters = null)
         {
             try
@@ -842,6 +876,12 @@ namespace Bee.SQLite
                                 while (index <= queryTexts.Count - 1)
                                 {
                                     var rows = new List<Dictionary<string, object>>();
+                                    int count = 0;
+
+                                    string text = queryTexts[index].TrimStart().ToUpperInvariant();
+
+                                    bool insert = text.StartsWith("INSERT") || text.StartsWith("REPLACE");
+                                    bool change = insert || text.StartsWith("UPDATE") || text.StartsWith("DELETE");
 
                                     command.CommandType = CommandType.Text;
                                     command.CommandText = queryTexts[index];
@@ -877,23 +917,33 @@ namespace Bee.SQLite
                                             rows.Add(row);
                                         }
 
-                                        int count = Math.Max(reader.RecordsAffected, 0);
+                                        count = change ? Math.Max(reader.RecordsAffected, 0) : 0;
+                                    }
 
-                                        affectedRowCount += count;
+                                    affectedRowCount += count;
 
-                                        data.Add(rows);
+                                    data.Add(rows);
 
-                                        string text = queryTexts[index].TrimStart().ToUpperInvariant();
+                                    if (count > 0 && insert)
+                                    {
+                                        insertedId = connection.LastInsertRowId;
+                                        insertedIds.Add(insertedId);
+                                    }
+                                    else
+                                    {
+                                        insertedIds.Add(null);
+                                    }
 
-                                        if (count > 0 && (text.StartsWith("INSERT") || text.StartsWith("REPLACE")))
+                                    if (count == 0 && change)
+                                    {
+                                        transaction.Rollback();
+
+                                        return new Query
                                         {
-                                            insertedId = connection.LastInsertRowId;
-                                            insertedIds.Add(insertedId);
-                                        }
-                                        else
-                                        {
-                                            insertedIds.Add(null);
-                                        }
+                                            execute = false,
+                                            message = "Transaction canceled. Query " + (index + 1) + " did not change any rows",
+                                            queryText = queryTexts[index]
+                                        };
                                     }
 
                                     index++;

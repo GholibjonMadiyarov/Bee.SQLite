@@ -24,17 +24,37 @@ SQLite.connectionString = "data source=Company.db;version=3;journal mode=Wal;poo
 | `selectRow` | First row | `data`, `read` |
 | `selectValue` | First value | `value` (`object`), `read` |
 | `selectValueString` | First value as string | `value` (`string`), `read` |
-| `selectValueInteger` | First value as long | `value` (`long?`), `read` |
+| `selectValueInteger` | First value as int | `value` (`int?`), `read` |
 | `insert` | INSERT | `insertedId`, `insertedIds`, `duplicate` |
-| `update` | UPDATE | `affectedRowCount` |
-| `delete` | DELETE | `affectedRowCount` |
+| `update` | UPDATE | `affectedRowCount`, `exception` |
+| `delete` | DELETE | `affectedRowCount`, `exception` |
 | `query` | Any SQL | `data`, `affectedRowCount`, `insertedId` / `insertedIds`, `duplicate` |
 
 Every result has `execute` (success), `message` and `stackTrace`.
 `read` is `false` when the query returned no rows.
 `duplicate` is `true` on a UNIQUE or PRIMARY KEY violation.
 
-Methods that take a list of queries (`insert`, `update`, `query`) run them in one transaction: if one fails, all are rolled back. Parameters are passed in the same order; an item may be `null`.
+`update` and `delete` return `execute = false` when no rows match. Use `exception` to tell the cases apart:
+
+| Case | `execute` | `exception` | `message` |
+|---|---|---|---|
+| Rows changed | `true` | `false` | Request completed successfully |
+| No rows matched | `false` | `false` | No rows were changed |
+| SQL error | `false` | `true` | Request failed. … |
+
+Methods that take a list of queries (`insert`, `update`, `query`) run them in one transaction. Parameters are passed in the same order; an item may be `null`. All queries are rolled back if:
+
+- a query fails, or
+- an INSERT, REPLACE, UPDATE or DELETE changes no rows (this includes `INSERT OR IGNORE` that skips a duplicate).
+
+In the second case `execute` is `false`, and `queryText` shows the query that changed nothing (`insert` and `update` also return its `parameter`).
+
+```csharp
+var u = SQLite.update(queries, parameters);
+
+if (!u.execute)
+    Console.WriteLine(u.message + ": " + u.queryText);
+```
 
 ## Examples
 
@@ -64,7 +84,7 @@ var user = SQLite.selectRow("select * from users where id = @id",
 if (user.read)
     Console.WriteLine(user.data["name"]);
 
-long? count = SQLite.selectValueInteger("select count(*) from users").value;
+int? count = SQLite.selectValueInteger("select count(*) from users").value;
 ```
 
 ### Insert
@@ -108,7 +128,12 @@ var update = SQLite.update("update users set age = @age where id = @id",
 var delete = SQLite.delete("delete from users where id = @id",
     new Dictionary<string, object> { { "@id", 1 } });
 
-Console.WriteLine(update.affectedRowCount + " / " + delete.affectedRowCount);
+if (update.execute)
+    Console.WriteLine("Updated: " + update.affectedRowCount);
+else if (!update.exception)
+    Console.WriteLine("Nothing to update");
+else
+    Console.WriteLine(update.message);
 ```
 
 ### Query
@@ -137,6 +162,16 @@ Console.WriteLine(q.affectedRowCount);       // changed rows in total
 Console.WriteLine(q.insertedIds[1]);         // id from the 2nd query
 Console.WriteLine(q.data[2][0]["total"]);    // result of the 3rd query
 ```
+
+## Notes
+
+- **Query type is detected by its first word.** `affectedRowCount`, `insertedId` and the "no rows changed" rollback in `query` work only for queries that start with `INSERT`, `REPLACE`, `UPDATE` or `DELETE`. A query that starts with `WITH` or a comment runs normally, but reports `affectedRowCount = 0` and `insertedId = null`.
+- **CREATE, DROP, PRAGMA and SELECT** report `affectedRowCount = 0`.
+- **One text, several statements** (`insert ...; insert ...`): all run, `affectedRowCount` is the total, `insertedId` is the last id. With several SELECTs only the first result is returned.
+- **Missing parameter:** a parameter used in the SQL but not passed gives `execute = false` (it is not sent as NULL).
+- **Parameter types:** `bool` is stored as `1`/`0`; `DateTime` as text `yyyy-MM-dd HH:mm:ss`; `Guid` as BLOB, so search it with a `Guid` value, not a string.
+- **`selectValueInteger`:** a value outside the `int` range gives `execute = false`.
+- **Locked database:** if another connection holds a write lock longer than `default timeout`, the method returns `execute = false` with "database is locked". Reads keep working in WAL mode.
 
 ## Encryption
 

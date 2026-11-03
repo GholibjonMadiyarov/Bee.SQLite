@@ -6,6 +6,7 @@
         public string message { get; set; }
         public string stackTrace { get; set; }
         public int affectedRowCount { get; set; }
+        public bool exception { get; set; }
 
         public Delete() 
         {
@@ -13,6 +14,7 @@
             message = null;
             stackTrace = null;
             affectedRowCount = 0;
+            exception = false;
         }
     }
 }

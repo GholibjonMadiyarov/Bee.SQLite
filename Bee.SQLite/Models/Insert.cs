@@ -14,6 +14,7 @@ namespace Bee.SQLite.Models
         public long? insertedId { get; set; }
         public List<long?> insertedIds { get; set; }
         public string queryText { get; set; }
+        public Dictionary<string, object> parameter { get; set; }
         public string stackTrace { get; set; }
 
         public Insert()
@@ -27,6 +28,7 @@ namespace Bee.SQLite.Models
             insertedId = null;
             insertedIds = new List<long?>();
             queryText = null;
+            parameter = new Dictionary<string, object>();
             stackTrace = null;
         }
     }
